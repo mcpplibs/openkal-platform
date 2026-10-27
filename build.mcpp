@@ -34,7 +34,10 @@ int main() {
         std::println(std::cerr, "openkal-platform: the staged package has no mcpp-package.json naming it");
         return 1;
     }
-    const std::string out = std::format("{}/{}-{}.okb", mcpp::out_dir(), name, version);
+    // Beside the staged tree, in the project's `target/dist/`, where the
+    // package's other forms are written.
+    const std::string out = std::format("{}/{}-{}.okb",
+        std::filesystem::path(stage).parent_path().generic_string(), name, version);
     mcpp::action a;
     a.id          = "okb";
     a.role        = mcpp::roles::artifact;

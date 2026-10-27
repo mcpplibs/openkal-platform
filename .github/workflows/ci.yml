@@ -132,7 +132,7 @@ jobs:
           # The okb: one file of both architectures, checked and run.
           mcpp pack --target "$t" --pkg-format okb --message-format json > okb.json
           okb=$($py -c 'import json; print(json.load(open("okb.json"))["data"]["artifacts"][0]["path"])')
-          okld="$(dirname "$okrun")/okld"; [ -f "$okld.exe" ] && okld="$okld.exe"
+          okld=$(mcpp self env --target "$t" --format json | $py -c 'import json,sys; print(json.load(sys.stdin)["data"]["tools"]["okld"])')
           "$okld" bundle check "$okb"
           "$okrun" "$okb" one two | tee okb.log
           grep -q "image ok: 3 args" okb.log || { echo "::error::the okb's output"; exit 1; }
