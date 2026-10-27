@@ -88,8 +88,10 @@ jobs:
           fi
 
       - name: The platform's tests
+        env:
+          MCPP_TOOL_BUILD_VERBOSE: '1'
         run: |
-          mcpp test 2>&1 | tee tests.log
+          mcpp test -v 2>&1 | tee tests.log
           grep -Eq "image_test .*ok" tests.log || { echo "::error::the test image did not run or did not pass"; exit 1; }
 
       - name: An ok image that declares nothing (run, M2, M3)
@@ -101,7 +103,8 @@ jobs:
           mcpp pack --target "$t" --pkg-format dir -o m2
           [ -f target/dist/m2/bin/image.oke ] || { echo "::error::M2 has no bin/image.oke"; exit 1; }
           mcpp pack --target "$t" --mode self-contained --pkg-format dir -o m3
-          m3=$(ls target/dist/m3/bin/image target/dist/m3/bin/image.exe 2>/dev/null | head -1)
+          m3=
+          for f in target/dist/m3/bin/image target/dist/m3/bin/image.exe; do [ -f "$f" ] && m3=$f; done
           [ -n "$m3" ] || { echo "::error::M3 has no program"; exit 1; }
           "$m3" one two | tee m3.log
           grep -q "image ok: 3 args" m3.log || { echo "::error::the M3 program's output"; exit 1; }
