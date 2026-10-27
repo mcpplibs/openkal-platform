@@ -109,7 +109,9 @@ jobs:
             [ -f "target/dist/uni/$f" ] || { echo "::error::the universal package has no $f"; exit 1; }
           done
           if [ "${{ runner.os }}" = Windows ]; then launcher="cmd //c target\dist\uni\bin\image.cmd"; else launcher=target/dist/uni/bin/image; fi
-          PATH="$(dirname "$okrun"):$PATH" $launcher one two | tee uni.log
+          okdir=$(dirname "$okrun")
+          if [ "${{ runner.os }}" = Windows ]; then okdir=$(cygpath -u "$okdir"); fi
+          PATH="$okdir:$PATH" $launcher one two | tee uni.log
           grep -q "image ok: 3 args" uni.log || { echo "::error::the universal launcher's output"; exit 1; }
           # Self-contained: the runner inside, nothing on PATH.
           mcpp pack --target "$t" --mode self-contained --pkg-format dir -o sc

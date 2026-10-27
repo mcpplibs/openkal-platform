@@ -1,52 +1,27 @@
 // The plugin of openkal-platform (mcpp SPEC-013 §12): it provides the `okb`
-// package format. `mcpp pack --pkg-format okb` stages the universal package and
-// this program's action makes it one okb (openkal-image docs/okb.md) with
+// package format. `mcpp pack --pkg-format okb` stages the universal package,
+// and this program's action makes it one okb (openkal-image docs/okb.md) with
 // `okld bundle --package`, which reads the package's mcpp-package.json
-// (mcpp SPEC-014 §4.5): the images of each architecture and the entry.
+// (mcpp SPEC-014 §4.5): the images of each architecture and the entry. The
+// okb is written beside the staged tree, in the project's `target/dist/`.
 import mcpp;
+import mcpp.plugins;           // the package reader
+import mcpp.plugins.platform;  // provide_format
 import std;
 
-namespace {
-
-// A string field of the package's metadata, read without a JSON library: the
-// document is the one mcpp writes, `"<key>": "<value>"` on its own line.
-std::string field(std::string_view text, std::string_view key) {
-    const auto at = text.find(std::format("\"{}\": \"", key));
-    if (at == std::string_view::npos) return {};
-    const auto from = at + key.size() + 5;
-    const auto to = text.find('"', from);
-    return to == std::string_view::npos ? std::string() : std::string(text.substr(from, to - from));
-}
-
-}  // namespace
+namespace pf = mcpp::plugins::platform;
 
 int main() {
-    // Stated whatever the pass: the set of formats is known to a build that
-    // asked for none.
-    mcpp::provides_pack_format("okb");
-    if (std::string_view(mcpp::pack_format()) != "okb") return 0;
-
-    const std::string stage = mcpp::pack_stage_dir();
-    std::ifstream in(stage + "/mcpp-package.json");
-    const std::string meta{std::istreambuf_iterator<char>(in), {}};
-    const auto name = field(meta, "name"), version = field(meta, "version");
-    if (name.empty()) {
-        std::println(std::cerr, "openkal-platform: the staged package has no mcpp-package.json naming it");
-        return 1;
-    }
-    // Beside the staged tree, in the project's `target/dist/`, where the
-    // package's other forms are written.
-    const std::string out = std::format("{}/{}-{}.okb",
-        std::filesystem::path(stage).parent_path().generic_string(), name, version);
-    mcpp::action a;
-    a.id          = "okb";
-    a.role        = mcpp::roles::artifact;
-    a.description = "okb";
-    a.arg(mcpp::dep_bin("openkal-tools", "okld"))
-     .arg("bundle").arg(out.c_str())
-     .arg("--package").arg("${mcpp.stage_dir}")
-     .input((stage + "/mcpp-package.json").c_str())
-     .output(out.c_str())
-     .submit();
-    return 0;
+    const auto stated = pf::provide_format("okb",
+        [](const mcpp::plugins::package::info& p, mcpp::action& a) {
+            const auto out = std::format("{}/{}-{}.okb",
+                std::filesystem::path(p.root).parent_path().generic_string(), p.name, p.version);
+            a.arg(mcpp::dep_bin("openkal-tools", "okld"))
+             .arg("bundle").arg(out.c_str())
+             .arg("--package").arg("${mcpp.stage_dir}")
+             .input((p.root + "/mcpp-package.json").c_str())
+             .output(out.c_str());
+            return true;
+        });
+    return stated ? 0 : 1;
 }

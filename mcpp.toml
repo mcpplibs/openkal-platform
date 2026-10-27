@@ -126,6 +126,10 @@ openkal-ld           = "0.1.3"
 openkal-run          = "0.1.3"
 openkal-tools        = "0.1.3"
 
-# The plugin's tool: `okld bundle` writes the okb.
+# The plugin's tool, `okld bundle`, which writes the okb, and its library, the
+# provider of a package format (mcpp.plugins.platform).
 [build-dependencies]
 openkal-tools = { version = "0.1.3", tools = ["okld"] }
+
+[build-dependencies.mcpp]
+plugins = { version = "0.20.0", features = ["plugins-platform"], host-module = true }
