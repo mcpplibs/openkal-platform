@@ -1,0 +1,9 @@
+# The hosted arrangement (mcpp SPEC-013 §5.4): this machine's own triple takes
+# the platform's toolchain, C library and C++ run-time over the system's openkal
+# implementation. The platform is the directory above.
+[package]
+name    = "hosted"
+version = "0.1.0"
+
+[target.'cfg(any(linux, macos, windows))']
+platform = { path = "../.." }

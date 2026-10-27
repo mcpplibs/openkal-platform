@@ -1,0 +1,115 @@
+# mcpplibs/openkal-platform -- the platform of the ok-image targets
+# (`<arch>-openkal`; mcpp SPEC-013, openkal SPEC clause 12).
+#
+# A data package: everything the openkal ecosystem agrees on for an ok image --
+# how one is compiled and linked, the notes it carries and the check that
+# accepts it, its names, the loader that runs it, the program that carries it
+# (M3) -- and the versions of the family that are built and tested together.
+# mcpp pins one version of it for the two targets, which is what "built-in
+# support" for them is; a project may select another with
+# `[target.<selector>] platform = "openkal-platform@<version>"`. Nothing here
+# is compiled.
+[package]
+namespace   = "mcpplibs"
+name        = "openkal-platform"
+version     = "0.17.1"
+description = "The platform of ok images (<arch>-openkal): their toolchain, C library and C++ run-time, tools, compile and link conventions, seal, runner and carrier, as one versioned statement mcpp reads."
+license     = "Apache-2.0"
+authors     = ["mcpplibs"]
+repo        = "https://github.com/mcpplibs/openkal-platform"
+mcpp        = ">=2026.10.27.1"
+
+[platform]
+targets   = ["x86_64-openkal", "aarch64-openkal"]
+toolchain = "llvm@23.1.3"
+# The loader runs an image of its own architecture on Linux, macOS and Windows.
+runner    = { cmd = ["okrun", "{}"], host = "same-arch" }
+# `mcpp pack --mode self-contained`: a program of the packing machine that
+# carries the image in a section and runs it through libokrun (M3).
+carrier   = { package = "openkal-run@0.1.1", section = ".oke", main = "carrier/main.cpp" }
+
+# The C library and the C++ run-time inside an image. A package of the graph
+# that provides a layer takes its place (`provides`), and `false` leaves it out.
+[platform.layers]
+compiler-runtime = "openkal-llvm-runtime@0.16.3"
+"c++-abi"        = "openkal-llvm-runtime@0.16.3"
+c-abi            = { name = "openkal-musl", version = "0.22.3", default-features = false, features = ["posix"] }
+
+# Built for the building machine: `okld` writes and checks the notes, `okrun`
+# runs an image.
+[platform.tools]
+okld  = "openkal-tools@0.1.1"
+okrun = "openkal-tools@0.1.1"
+
+# Every unit of an image (SPEC 12.2):
+#   -fPIC              the image is ET_DYN and has no text relocation;
+#   -femulated-tls     a variable is found through `__emutls_get_address`, which
+#                      the image supplies: one system does not let a program set
+#                      the thread pointer, another does not let it change it;
+#   -fvisibility=hidden
+#                      an image exports what its source marks
+#                      `visibility("default")`, so the link can drop what
+#                      nothing reaches and the requirements note names only the
+#                      interfaces the program uses;
+#   -fasynchronous-unwind-tables
+#                      every frame, C's included, can be unwound: a C++
+#                      exception crosses the unwinder's own C and the C library's;
+#   -Xclang -fstack-clash-protection
+#                      a frame larger than a page is probed page by page, as one
+#                      system commits a thread's stack as its guard is touched.
+[platform.build]
+cflags   = ["-fPIC", "-femulated-tls", "-fvisibility=hidden", "-fasynchronous-unwind-tables", "-Xclang", "-fstack-clash-protection"]
+cxxflags = ["-fPIC", "-femulated-tls", "-fvisibility=hidden", "-fasynchronous-unwind-tables", "-Xclang", "-fstack-clash-protection"]
+asmflags = ["-fPIC", "-femulated-tls", "-fvisibility=hidden", "-fasynchronous-unwind-tables", "-Xclang", "-fstack-clash-protection"]
+
+# AArch64: two systems reserve the platform register, and the outlined atomic
+# helpers read the processor's features through an operating system's interface.
+[platform.build.'cfg(arch = "aarch64")']
+cflags   = ["-ffixed-x18", "-mno-outline-atomics"]
+cxxflags = ["-ffixed-x18", "-mno-outline-atomics"]
+asmflags = ["-ffixed-x18", "-mno-outline-atomics"]
+
+# The link, by `ld.lld` itself: position-independent, every loadable segment
+# aligned to 64 KiB (the largest protection granularity among the systems),
+# bound now, no executable stack, both hash tables, what nothing reaches
+# discarded, and the unwind index an unwinder finds through `dl_iterate_phdr`.
+# An executable image is entered at `ok_main`, which its C library defines; its
+# notes come from `okld note-source`; `okld note` writes its requirements and
+# `okld check` accepts it, against the images it needs, before it is published.
+[platform.link]
+driver = "lld"
+start  = "ok_main"
+flags  = ["-shared", "-z", "max-page-size=65536", "-z", "now", "-z", "noexecstack",
+          "--hash-style=both", "--gc-sections", "--eh-frame-hdr"]
+inputs = [{ from = ["okld", "note-source"], as = "ok-notes.S" }]
+exe    = "{name}.oke"
+shared = "lib{name}.okso"
+seal   = [["okld", "note", "{}"], ["okld", "check", "{}", "--with", "{needed}"]]
+
+# A host triple selecting this platform (`x86_64-linux-gnu`, `aarch64-macos`,
+# `x86_64-windows-gnu`) takes the same C library and C++ run-time over the
+# system's openkal implementation, compiled by the same toolchain.
+[platform.hosted]
+# On Windows the arrangement is the GNU ABI's (or musl's) row: a C library of the
+# graph and libc++ above it are not the MSVC runtime's.
+targets   = ["x86_64-linux-gnu", "aarch64-linux-gnu", "x86_64-linux-musl", "aarch64-linux-musl",
+             "x86_64-macos", "aarch64-macos", "x86_64-windows-gnu", "x86_64-windows-musl"]
+toolchain = "llvm@23.1.3"
+
+[platform.hosted.layers]
+compiler-runtime = "openkal-llvm-runtime@0.16.3"
+"c++-abi"        = "openkal-llvm-runtime@0.16.3"
+c-abi            = { name = "openkal-musl", version = "0.22.3", default-features = false, features = ["posix"] }
+
+# The family released together as openkal 0.17.1: one version of each in a
+# build (their pins are exact).
+[platform.versions]
+openkal              = "0.17.1"
+openkal-linux        = "0.18.2"
+openkal-macos        = "0.15.1"
+openkal-windows      = "0.13.3"
+openkal-musl         = "0.22.3"
+openkal-llvm-runtime = "0.16.3"
+openkal-ld           = "0.1.1"
+openkal-run          = "0.1.1"
+openkal-tools        = "0.1.1"

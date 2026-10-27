@@ -1,0 +1,9 @@
+# An ok image built over this platform (mcpp SPEC-013): the project names its
+# sources and nothing else; the platform, the directory above, supplies the
+# C library, the C++ run-time, the tools, the link and the runner.
+[package]
+name    = "image"
+version = "0.1.0"
+
+[target.'cfg(os = "openkal")']
+platform = { path = "../.." }
