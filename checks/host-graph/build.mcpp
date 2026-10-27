@@ -1,0 +1,6 @@
+import mcpp;
+import std;
+int main() {
+    mcpp::define("BUILT_BY_AN_IMAGE=1");
+    return 0;
+}

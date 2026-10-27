@@ -1,0 +1,122 @@
+name: CI
+
+# What this workflow asserts about openkal-platform.
+#
+#   tests       `mcpp test` on the platform package: the test image runs on the
+#               machine's architecture and is built for the other one
+#   image       a project that declares nothing builds, runs and packs an ok
+#               image over this platform (M2 and M3)
+#   hosted      the machine's own triple takes the platform's hosted arrangement
+#   host-graph  a build program is compiled as an ok image and run by okrun
+#
+# The platform is read by mcpp 2026.10.27.1 and later (SPEC-013). A dispatch, or
+# the repository variable MCPP_SOURCE_REF, may name a branch of mcpp instead,
+# which is then built and used.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      mcpp_ref:
+        description: "Branch of mcpp-community/mcpp to build and test with (empty = the released mcpp)"
+        required: false
+        default: ""
+
+env:
+  MCPP_SOURCE_REF: ${{ github.event.inputs.mcpp_ref || vars.MCPP_SOURCE_REF || '' }}
+  MCPP_VERSION: 2026.10.26.2
+  XLINGS_VERSION: v2026.10.26.1
+  XLINGS_NON_INTERACTIVE: '1'
+
+jobs:
+  platform:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # `host`: the machine's own triple, as a program of the hosted
+          # arrangement names it (a Windows host defaults to the MSVC target,
+          # and openkal's Windows implementation is reached through the GNU one).
+          - { os: ubuntu-24.04,     arch: x86_64,  host: '' }
+          - { os: ubuntu-24.04-arm, arch: aarch64, host: '' }
+          - { os: macos-15,         arch: aarch64, host: '--target aarch64-macos' }
+          - { os: windows-2022,     arch: x86_64,  host: '--target x86_64-windows-gnu' }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings and mcpp (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
+            | bash -s "$XLINGS_VERSION"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+
+      - name: Install xlings and mcpp (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          irm https://d2learn.org/xlings-install.ps1.txt | iex
+          "$env:USERPROFILE\.xlings\subos\current\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: The mcpp under cross-validation
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            xlings update > /dev/null 2>&1 || true
+            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
+            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
+            sleep 60
+          done
+          mcpp --version
+          mcpp self config --mirror GLOBAL
+          if [ -n "${MCPP_SOURCE_REF:-}" ]; then
+            src="$RUNNER_TEMP/mcpp-src"
+            git clone --quiet --depth 1 --branch "$MCPP_SOURCE_REF" https://github.com/mcpp-community/mcpp.git "$src"
+            rm -f "$src/.xlings.json"
+            ( cd "$src" && mcpp build --release )
+            built=$(find "$src/target" -type f \( -name mcpp -o -name mcpp.exe \) -path '*/bin/*' | head -1)
+            [ -n "$built" ] || { echo "::error::mcpp did not build from $MCPP_SOURCE_REF"; exit 1; }
+            echo "$(cd "$(dirname "$built")" && pwd)" >> "$GITHUB_PATH"
+            echo "under review: $("$built" --version)  (from $MCPP_SOURCE_REF)"
+          fi
+
+      - name: The platform's tests
+        env:
+          MCPP_TOOL_BUILD_VERBOSE: '1'
+        run: |
+          mcpp test -v 2>&1 | tee tests.log
+          grep -Eq "image_test .*ok" tests.log || { echo "::error::the test image did not run or did not pass"; exit 1; }
+
+      - name: An ok image that declares nothing (run, M2, M3)
+        working-directory: checks/image
+        run: |
+          t='${{ matrix.arch }}-openkal'
+          mcpp run --target "$t" -- one two | tee run.log
+          grep -q "image ok: 3 args" run.log || { echo "::error::the image's output"; exit 1; }
+          mcpp pack --target "$t" --pkg-format dir -o m2
+          [ -f target/dist/m2/bin/image.oke ] || { echo "::error::M2 has no bin/image.oke"; exit 1; }
+          mcpp pack --target "$t" --mode self-contained --pkg-format dir -o m3
+          m3=
+          for f in target/dist/m3/bin/image target/dist/m3/bin/image.exe; do [ -f "$f" ] && m3=$f; done
+          [ -n "$m3" ] || { echo "::error::M3 has no program"; exit 1; }
+          "$m3" one two | tee m3.log
+          grep -q "image ok: 3 args" m3.log || { echo "::error::the M3 program's output"; exit 1; }
+
+      - name: The hosted arrangement
+        working-directory: checks/hosted
+        run: |
+          mcpp run ${{ matrix.host }} | tee run.log
+          grep -q "hosted ok: hosted" run.log || { echo "::error::the hosted program's output"; exit 1; }
+
+      - name: A build program as an ok image (the host graph)
+        working-directory: checks/host-graph
+        run: |
+          mcpp run | tee run.log
+          grep -q "host graph ok: 1" run.log || { echo "::error::the build program's definition did not arrive"; exit 1; }
