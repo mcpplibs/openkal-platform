@@ -17,7 +17,10 @@ version = "0.1.0"
 ```bash
 mcpp run  --target x86_64-openkal      # built as app.oke, run by okrun
 mcpp test --target aarch64-openkal
-mcpp pack --target x86_64-openkal --mode self-contained
+mcpp pack --target x86_64-openkal      # one package: every architecture, launchers
+mcpp pack --target x86_64-openkal --mode self-contained   # the runner inside, nothing to install
+mcpp pack --target x86_64-openkal --pkg-format single-file
+mcpp pack --target x86_64-openkal --pkg-format okb        # one file okrun runs on any system
 ```
 
 ## What the platform states
@@ -28,12 +31,14 @@ mcpp pack --target x86_64-openkal --mode self-contained
 | toolchain | `llvm@23.1.3` |
 | layers | `c-abi` openkal-musl (`posix`), `c++-abi` and `compiler-runtime` openkal-llvm-runtime |
 | tools | `okld`, `okrun` (openkal-tools) |
-| build | `-fPIC -femulated-tls -fvisibility=hidden -fasynchronous-unwind-tables`, stack-clash protection; on aarch64 `-ffixed-x18 -mno-outline-atomics` |
-| link | `ld.lld`, entry `ok_main`, 64 KiB pages, the image notes produced by `okld note-source` |
+| build | `-fPIC -femulated-tls -fvisibility=hidden -fasynchronous-unwind-tables`, stack-clash protection, `-ffunction-sections -fdata-sections`; on aarch64 `-ffixed-x18 -mno-outline-atomics` |
+| link | `ld.lld`, entry `ok_main`, 64 KiB pages, `--gc-sections --icf=safe`, the image notes produced by `okld note-source` |
 | seal | `okld note`, then `okld check --with` the shared images the program needs |
 | naming | `{name}.oke`, `lib{name}.okso` |
 | runner | `okrun {}`, on a machine of the image's architecture |
-| carrier | openkal-run, section `.oke`, entry `carrier/main.cpp` |
+| carrier | openkal-run, section `.oke`, entry `carrier/main.cpp`: with nothing carried the runner of a package, with an image or a zip of images the program that runs them from memory |
+| universal | `mcpp pack` of either target packs both into one package (mcpp SPEC-014 §3) |
+| plugin | `build.mcpp` provides the `okb` package format through `okld bundle --package` |
 | hosted | the toolchain and the layers for the host triples, over the system's openkal implementation |
 | versions | the release group of the openkal family |
 
