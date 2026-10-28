@@ -1,2 +1,6 @@
 target/
 mcpp.lock
+# What the checks write where they run.
+checks/*/*.log
+checks/*/*.err
+checks/*/*.json
