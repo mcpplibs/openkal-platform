@@ -1,0 +1,27 @@
+// The plugin of openkal-platform (mcpp SPEC-013 §12): it provides the `okb`
+// package format. `mcpp pack --pkg-format okb` stages the universal package,
+// and this program's action makes it one okb (openkal-image docs/okb.md) with
+// `okld bundle --package`, which reads the package's mcpp-package.json
+// (mcpp SPEC-014 §4.5): the images of each architecture and the entry. The
+// okb is written beside the staged tree, in the project's `target/dist/`.
+import mcpp;
+import mcpp.plugins;           // the package reader
+import mcpp.plugins.platform;  // provide_format
+import std;
+
+namespace pf = mcpp::plugins::platform;
+
+int main() {
+    const auto stated = pf::provide_format("okb",
+        [](const mcpp::plugins::package::info& p, mcpp::action& a) {
+            const auto out = std::format("{}/{}-{}.okb",
+                std::filesystem::path(p.root).parent_path().generic_string(), p.name, p.version);
+            a.arg(mcpp::dep_bin("openkal-tools", "okld"))
+             .arg("bundle").arg(out.c_str())
+             .arg("--package").arg("${mcpp.stage_dir}")
+             .input((p.root + "/mcpp-package.json").c_str())
+             .output(out.c_str());
+            return true;
+        });
+    return stated ? 0 : 1;
+}

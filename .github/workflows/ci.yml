@@ -5,7 +5,8 @@ name: CI
 #   tests       `mcpp test` on the platform package: the test image runs on the
 #               machine's architecture and is built for the other one
 #   image       a project that declares nothing builds, runs and packs an ok
-#               image over this platform (M2 and M3)
+#               image over this platform: the universal package (vendored and
+#               self-contained), M3, a single file and an okb
 #   hosted      the machine's own triple takes the platform's hosted arrangement
 #   host-graph  a build program is compiled as an ok image and run by okrun
 #
@@ -94,20 +95,49 @@ jobs:
           mcpp test -v 2>&1 | tee tests.log
           grep -Eq "image_test .*ok" tests.log || { echo "::error::the test image did not run or did not pass"; exit 1; }
 
-      - name: An ok image that declares nothing (run, M2, M3)
+      - name: An ok image that declares nothing (run, universal, self-contained, single file, okb)
         working-directory: checks/image
         run: |
           t='${{ matrix.arch }}-openkal'
+          py=python3; command -v python3 > /dev/null 2>&1 && python3 -c '' 2>/dev/null || py=python
           mcpp run --target "$t" -- one two | tee run.log
           grep -q "image ok: 3 args" run.log || { echo "::error::the image's output"; exit 1; }
-          mcpp pack --target "$t" --pkg-format dir -o m2
-          [ -f target/dist/m2/bin/image.oke ] || { echo "::error::M2 has no bin/image.oke"; exit 1; }
-          mcpp pack --target "$t" --mode self-contained --pkg-format dir -o m3
+          okrun=$(mcpp self env --target "$t" --format json | $py -c 'import json,sys; print(json.load(sys.stdin)["data"]["runner"]["program"])')
+          # The universal package: both architectures, launchers, the runner on PATH.
+          mcpp pack --target "$t" --pkg-format dir -o uni
+          for f in lib/x86_64/image.oke lib/aarch64/image.oke bin/image bin/image.cmd mcpp-package.json; do
+            [ -f "target/dist/uni/$f" ] || { echo "::error::the universal package has no $f"; exit 1; }
+          done
+          if [ "${{ runner.os }}" = Windows ]; then launcher="cmd //c target\dist\uni\bin\image.cmd"; else launcher=target/dist/uni/bin/image; fi
+          okdir=$(dirname "$okrun")
+          if [ "${{ runner.os }}" = Windows ]; then okdir=$(cygpath -u "$okdir"); fi
+          PATH="$okdir:$PATH" $launcher one two | tee uni.log
+          grep -q "image ok: 3 args" uni.log || { echo "::error::the universal launcher's output"; exit 1; }
+          # Self-contained: the runner inside, nothing on PATH.
+          mcpp pack --target "$t" --mode self-contained --pkg-format dir -o sc
+          if [ "${{ runner.os }}" = Windows ]; then sclauncher="cmd //c target\dist\sc\bin\image.cmd"; else sclauncher=target/dist/sc/bin/image; fi
+          $sclauncher one two | tee sc.log
+          grep -q "image ok: 3 args" sc.log || { echo "::error::the self-contained package's output"; exit 1; }
+          # One program carrying the image (M3), and one file.
+          mcpp pack --target "$t" --no-universal --mode self-contained --pkg-format dir -o m3
           m3=
           for f in target/dist/m3/bin/image target/dist/m3/bin/image.exe; do [ -f "$f" ] && m3=$f; done
           [ -n "$m3" ] || { echo "::error::M3 has no program"; exit 1; }
           "$m3" one two | tee m3.log
           grep -q "image ok: 3 args" m3.log || { echo "::error::the M3 program's output"; exit 1; }
+          mcpp pack --target "$t" --pkg-format single-file -o one
+          one=
+          for f in target/dist/one target/dist/one.exe; do [ -f "$f" ] && one=$f; done
+          [ -n "$one" ] || { echo "::error::no single file"; exit 1; }
+          "$one" one two | tee one.log
+          grep -q "image ok: 3 args" one.log || { echo "::error::the single file's output"; exit 1; }
+          # The okb: one file of both architectures, checked and run.
+          mcpp pack --target "$t" --pkg-format okb --message-format json > okb.json
+          okb=$($py -c 'import json; print(json.load(open("okb.json"))["data"]["artifacts"][0]["path"])')
+          okld=$(mcpp self env --target "$t" --format json | $py -c 'import json,sys; print(json.load(sys.stdin)["data"]["tools"]["okld"])')
+          "$okld" bundle check "$okb"
+          "$okrun" "$okb" one two | tee okb.log
+          grep -q "image ok: 3 args" okb.log || { echo "::error::the okb's output"; exit 1; }
 
       - name: The hosted arrangement
         working-directory: checks/hosted
