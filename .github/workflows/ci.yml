@@ -142,8 +142,17 @@ jobs:
       - name: The hosted arrangement
         working-directory: checks/hosted
         run: |
-          mcpp run ${{ matrix.host }} | tee run.log
+          mcpp run ${{ matrix.host }} -- one two | tee run.log
           grep -q "hosted ok: hosted" run.log || { echo "::error::the hosted program's output"; exit 1; }
+          exe=$(find target -type f \( -name hosted -o -name hosted.exe \) -path '*/bin/*' | head -1)
+          "$exe" alpha beta | tee direct.log || true
+          if [ "$RUNNER_OS" = macOS ]; then
+            otool -l "$exe" | grep -A4 -E 'LC_MAIN|LC_UNIXTHREAD' || true
+            nm "$exe" | grep -E ' (_okm_start|_main|___libc_start_main|_capture|__init_array)' || true
+            otool -l "$exe" | grep -B2 -A12 'mod_init_func' | head -30 || true
+            mcpp build -v ${{ matrix.host }} 2>&1 | grep -E ' -e |okm_start|-Wl' | head -5 || true
+          fi
+          grep -q "hosted args: 3" direct.log || { echo "::error::the hosted program's arguments"; exit 1; }
 
       - name: A build program as an ok image (the host graph)
         working-directory: checks/host-graph
