@@ -142,8 +142,9 @@ jobs:
       - name: The hosted arrangement
         working-directory: checks/hosted
         run: |
-          mcpp run ${{ matrix.host }} | tee run.log
+          mcpp run ${{ matrix.host }} -- one two | tee run.log
           grep -q "hosted ok: hosted" run.log || { echo "::error::the hosted program's output"; exit 1; }
+          grep -q "hosted args: 3 two" run.log || { echo "::error::the hosted program's arguments"; exit 1; }
 
       - name: A build program as an ok image (the host graph)
         working-directory: checks/host-graph
