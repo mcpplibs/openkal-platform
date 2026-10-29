@@ -124,11 +124,12 @@ jobs:
           mcpp pack --target "$t" --pkg-format dir -o one
           [ -f "target/dist/one/lib/${{ matrix.arch }}/image.oke" ] || { echo "::error::one target's tree has no lib/${{ matrix.arch }}/image.oke"; exit 1; }
           [ -d "target/dist/one/lib/$other" ] && { echo "::error::one target packed lib/$other"; exit 1; }
-          "target/dist/one/$bin" one two > /dev/null 2>&1 || PATH="$okdir:$PATH" "target/dist/one/$bin" one two | tee one-tree.log
+          PATH="$okdir:$PATH" "target/dist/one/$bin" one two | tee one-tree.log
+          grep -q "image ok: 3 args" one-tree.log || { echo "::error::one target's tree's output"; exit 1; }
           # One file: a program of this system carrying the image.
-          mcpp pack --target "$t" --pkg-format single-file -o one
+          mcpp pack --target "$t" --pkg-format single-file -o single
           one=
-          for f in target/dist/one target/dist/one.exe; do [ -f "$f" ] && one=$f; done
+          for f in target/dist/single target/dist/single.exe; do [ -f "$f" ] && one=$f; done
           [ -n "$one" ] || { echo "::error::no single file"; exit 1; }
           "$one" one two | tee one.log
           grep -q "image ok: 3 args" one.log || { echo "::error::the single file's output"; exit 1; }
