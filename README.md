@@ -35,9 +35,8 @@ mcpp pack --target x86_64-openkal --pkg-format okb        # one file okrun runs 
 | link | `ld.lld`, entry `ok_main`, 64 KiB pages, `--gc-sections --icf=safe`, the image notes produced by `okld note-source` |
 | seal | `okld note`, then `okld check --with` the shared images the program needs |
 | naming | `{name}.oke`, `lib{name}.okso` |
-| runner | `okrun {}`, on a machine of the image's architecture |
+| runner | `okrun {}`, on a machine of the image's architecture; `hosts` the systems and architectures okrun is built for, where a package that needs it can run |
 | carrier | openkal-run, section `.oke`, entry `carrier/main.cpp`: with nothing carried the runner of a package, with an image or a zip of images the program that runs them from memory |
-| universal | `mcpp pack` of either target packs both into one package (mcpp SPEC-014 §3) |
 | plugin | `build.mcpp` provides the `okb` package format through `okld bundle --package` |
 | hosted | the toolchain and the layers for the host triples, over the system's openkal implementation |
 | versions | the release group of the openkal family |
