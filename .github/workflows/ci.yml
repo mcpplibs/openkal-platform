@@ -10,9 +10,12 @@ name: CI
 #   hosted      the machine's own triple takes the platform's hosted arrangement
 #   host-graph  a build program is compiled as an ok image and run by okrun
 #
-# The platform is read by mcpp 2026.10.30.1 and later (SPEC-013, SPEC-015). A
-# dispatch, or the repository variable MCPP_SOURCE_REF, may name a branch of mcpp
-# instead, which the latest released mcpp builds and which is then used.
+# The platform is read by mcpp 2026.10.30.1 and later (SPEC-013, SPEC-015). CI
+# measures with 2026.10.31.3: from 2026.10.31.2 a set's Windows launcher is built
+# over the platform of mcpp's own openkal rows rather than the one a project
+# selects, whose version group may name another openkal than the launcher's os.
+# A dispatch, or the repository variable MCPP_SOURCE_REF, may name a branch of
+# mcpp instead, which the latest released mcpp builds and which is then used.
 
 on:
   push:
@@ -27,7 +30,7 @@ on:
 
 env:
   MCPP_SOURCE_REF: ${{ github.event.inputs.mcpp_ref || vars.MCPP_SOURCE_REF || '' }}
-  MCPP_VERSION: 2026.10.30.1
+  MCPP_VERSION: 2026.10.31.3
   XLINGS_VERSION: v2026.10.26.1
   XLINGS_NON_INTERACTIVE: '1'
 
