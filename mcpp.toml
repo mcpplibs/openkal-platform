@@ -12,7 +12,7 @@
 [package]
 namespace   = "mcpplibs"
 name        = "openkal-platform"
-version     = "0.20.1"
+version     = "0.20.2"
 description = "The platform of ok images (<arch>-openkal): their toolchain, C library and C++ run-time, tools, compile and link conventions, seal, runner and carrier, as one versioned statement mcpp reads."
 license     = "Apache-2.0"
 authors     = ["mcpplibs"]
@@ -36,9 +36,9 @@ plugin    = "build.mcpp"
 # The C library and the C++ run-time inside an image. A package of the graph
 # that provides a layer takes its place (`provides`), and `false` leaves it out.
 [platform.layers]
-compiler-runtime = "openkal-llvm-runtime@0.16.14"
-"c++-abi"        = "openkal-llvm-runtime@0.16.14"
-c-abi            = { name = "openkal-musl", version = "0.24.1", default-features = false, features = ["posix"] }
+compiler-runtime = "openkal-llvm-runtime@0.16.15"
+"c++-abi"        = "openkal-llvm-runtime@0.16.15"
+c-abi            = { name = "openkal-musl", version = "0.25.0", default-features = false, features = ["posix"] }
 
 # Built for the building machine: `okld` writes and checks the notes, `okrun`
 # runs an image.
@@ -107,9 +107,9 @@ targets   = ["x86_64-linux-gnu", "aarch64-linux-gnu", "x86_64-linux-musl", "aarc
 toolchain = "llvm@23.1.3"
 
 [platform.hosted.layers]
-compiler-runtime = "openkal-llvm-runtime@0.16.14"
-"c++-abi"        = "openkal-llvm-runtime@0.16.14"
-c-abi            = { name = "openkal-musl", version = "0.24.1", default-features = false, features = ["posix"] }
+compiler-runtime = "openkal-llvm-runtime@0.16.15"
+"c++-abi"        = "openkal-llvm-runtime@0.16.15"
+c-abi            = { name = "openkal-musl", version = "0.25.0", default-features = false, features = ["posix"] }
 
 # The family released together for openkal 0.17 (the 0.17.2 round: okb, the
 # runner's bundle and library interfaces, musl's renameat2; the 0.17.3 round:
@@ -121,15 +121,16 @@ c-abi            = { name = "openkal-musl", version = "0.24.1", default-features
 # the processor states them; openkal 0.19 (0.20.0): the physical cores and a
 # context's claim on the processors, getpid as the environment's identifier,
 # flock, and okb chunk digests verified in parallel; 0.20.1: openkal-macos
-# 0.17.1, a context's identity without a system call):
+# 0.17.1, a context's identity without a system call; 0.20.2: openkal-musl
+# 0.25.0, threads allocate together and memcmp/strlen a word at a time):
 # one version of each in a build (their pins are exact).
 [platform.versions]
 openkal              = "0.19.0"
 openkal-linux        = "0.20.0"
 openkal-macos        = "0.17.1"
 openkal-windows      = "0.15.0"
-openkal-musl         = "0.24.1"
-openkal-llvm-runtime = "0.16.14"
+openkal-musl         = "0.25.0"
+openkal-llvm-runtime = "0.16.15"
 openkal-ld           = "0.1.9"
 openkal-run          = "0.1.9"
 openkal-tools        = "0.1.9"
