@@ -12,12 +12,12 @@
 [package]
 namespace   = "mcpplibs"
 name        = "openkal-platform"
-version     = "0.20.2"
+version     = "0.21.0"
 description = "The platform of ok images (<arch>-openkal): their toolchain, C library and C++ run-time, tools, compile and link conventions, seal, runner and carrier, as one versioned statement mcpp reads."
 license     = "Apache-2.0"
 authors     = ["mcpplibs"]
 repo        = "https://github.com/mcpplibs/openkal-platform"
-mcpp        = ">=2026.10.30.1"
+mcpp        = ">=2026.11.2.1"
 
 [platform]
 targets   = ["x86_64-openkal", "aarch64-openkal"]
@@ -28,7 +28,7 @@ toolchain = "llvm@23.1.3"
 runner    = { cmd = ["okrun", "{}"], host = "same-arch", hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64"] }
 # `mcpp pack --mode self-contained`: a program of the packing machine that
 # carries the image in a section and runs it through libokrun (M3).
-carrier   = { package = "openkal-run@0.1.9", section = ".oke", main = "carrier/main.cpp" }
+carrier   = { package = "openkal-run@0.3.0", section = ".oke", main = "carrier/main.cpp" }
 # The `okb` package format (`mcpp pack --pkg-format okb`): the images of every
 # architecture as one file okrun runs (openkal-image docs/okb.md).
 plugin    = "build.mcpp"
@@ -36,15 +36,15 @@ plugin    = "build.mcpp"
 # The C library and the C++ run-time inside an image. A package of the graph
 # that provides a layer takes its place (`provides`), and `false` leaves it out.
 [platform.layers]
-compiler-runtime = "openkal-llvm-runtime@0.16.15"
-"c++-abi"        = "openkal-llvm-runtime@0.16.15"
-c-abi            = { name = "openkal-musl", version = "0.25.0", default-features = false, features = ["posix"] }
+compiler-runtime = "openkal-llvm-runtime@0.17.0"
+"c++-abi"        = "openkal-llvm-runtime@0.17.0"
+c-abi            = { name = "openkal-musl", version = "0.26.0", default-features = false, features = ["posix", "malloc-mimalloc"] }
 
 # Built for the building machine: `okld` writes and checks the notes, `okrun`
 # runs an image.
 [platform.tools]
-okld  = "openkal-tools@0.1.9"
-okrun = "openkal-tools@0.1.9"
+okld  = "openkal-tools@0.3.0"
+okrun = "openkal-tools@0.3.0"
 
 # Every unit of an image (SPEC 12.2):
 #   -fPIC              the image is ET_DYN and has no text relocation;
@@ -107,9 +107,9 @@ targets   = ["x86_64-linux-gnu", "aarch64-linux-gnu", "x86_64-linux-musl", "aarc
 toolchain = "llvm@23.1.3"
 
 [platform.hosted.layers]
-compiler-runtime = "openkal-llvm-runtime@0.16.15"
-"c++-abi"        = "openkal-llvm-runtime@0.16.15"
-c-abi            = { name = "openkal-musl", version = "0.25.0", default-features = false, features = ["posix"] }
+compiler-runtime = "openkal-llvm-runtime@0.17.0"
+"c++-abi"        = "openkal-llvm-runtime@0.17.0"
+c-abi            = { name = "openkal-musl", version = "0.26.0", default-features = false, features = ["posix", "malloc-mimalloc"] }
 
 # The family released together for openkal 0.17 (the 0.17.2 round: okb, the
 # runner's bundle and library interfaces, musl's renameat2; the 0.17.3 round:
@@ -122,23 +122,30 @@ c-abi            = { name = "openkal-musl", version = "0.25.0", default-features
 # context's claim on the processors, getpid as the environment's identifier,
 # flock, and okb chunk digests verified in parallel; 0.20.1: openkal-macos
 # 0.17.1, a context's identity without a system call; 0.20.2: openkal-musl
-# 0.25.0, threads allocate together and memcmp/strlen a word at a time):
+# 0.25.0, threads allocate together and memcmp/strlen a word at a time;
+# openkal 0.21 (0.21.0): transfers at an offset, a program's and a unit's
+# memory and a limit on it, openkal.region, openkal.prof and openkal.debug,
+# instructions from a file; openkal-musl 0.26.0 with mimalloc embedded, memory
+# over openkal.region and its string functions in vectors; okrun's measurement
+# of an image (okprof), an okb's admission remembered, and an image's
+# instructions and read-only data mapped from its file; a program started
+# without copying its starter on Linux):
 # one version of each in a build (their pins are exact).
 [platform.versions]
-openkal              = "0.19.0"
-openkal-linux        = "0.20.0"
-openkal-macos        = "0.17.1"
-openkal-windows      = "0.15.0"
-openkal-musl         = "0.25.0"
-openkal-llvm-runtime = "0.16.15"
-openkal-ld           = "0.1.9"
-openkal-run          = "0.1.9"
-openkal-tools        = "0.1.9"
+openkal              = "0.21.0"
+openkal-linux        = "0.22.0"
+openkal-macos        = "0.19.0"
+openkal-windows      = "0.17.0"
+openkal-musl         = "0.26.0"
+openkal-llvm-runtime = "0.17.0"
+openkal-ld           = "0.3.0"
+openkal-run          = "0.3.0"
+openkal-tools        = "0.3.0"
 
 # The plugin's tool, `okld bundle`, which writes the okb, and its library, the
 # provider of a package format (mcpp.plugins.platform).
 [build-dependencies]
-openkal-tools = { version = "0.1.9", tools = ["okld"] }
+openkal-tools = { version = "0.3.0", tools = ["okld"] }
 
 [build-dependencies.mcpp]
 plugins = { version = "0.20.0", features = ["plugins-platform"], host-module = true }
