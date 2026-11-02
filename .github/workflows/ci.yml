@@ -151,6 +151,33 @@ jobs:
           OKRUN_PLACE=0 "$okrun" "$image" one two | tee anywhere.log
           grep -q "image ok: 3 args" anywhere.log || { echo "::error::the image placed anywhere"; exit 1; }
 
+      - name: A snapshot of a C++ program's initialisers (0.23.0)
+        working-directory: checks/snapshot
+        run: |
+          # The first start runs the initialisers and has a snapshot made; the
+          # next starts from it (its phases name the snapshot) and observes the
+          # same; a start whose named value the initialisers read differs runs
+          # them again, and observes its own value.
+          t='${{ matrix.arch }}-openkal'
+          py=python3; command -v python3 > /dev/null 2>&1 && python3 -c '' 2>/dev/null || py=python
+          mcpp build --release --target "$t"
+          okrun=$(mcpp self env --target "$t" --format json | $py -c 'import json,sys; print(json.load(sys.stdin)["data"]["runner"]["program"])')
+          image=$(find target -path "*$t*" -path '*bin*' -name snapshot.oke -type f | head -1)
+          export OKRUN_CACHE="$RUNNER_TEMP/okcache"
+          mkdir -p "$OKRUN_CACHE"
+          "$okrun" "$image" one | tr -d '\r' | tee first.log
+          grep -q -- '-- failures: 0 --' first.log || { echo "::error::the first start"; exit 1; }
+          for i in $(seq 100); do grep -qs '^made\|^refused' "$OKRUN_CACHE"/*.sealing && break; sleep 0.1; done
+          cat "$OKRUN_CACHE"/*.sealing
+          grep -q '^made' "$OKRUN_CACHE"/*.sealing || { echo "::error::no snapshot was made"; exit 1; }
+          rm -rf prof && mkdir prof
+          OKRUN_PROF=phases:prof "$okrun" "$image" two | tr -d '\r' | tee second.log
+          grep -q -- '-- failures: 0 --' second.log && grep -q 'local two' second.log || { echo "::error::the start from the snapshot"; exit 1; }
+          grep -q '"name": "snapshot"' prof/okprof-*.json || { echo "::error::the second start did not start from the snapshot"; exit 1; }
+          SNAPSHOT_CHECK_NAME=set "$okrun" "$image" three | tr -d '\r' | tee third.log
+          grep -q 'named: set' third.log && grep -q -- '-- failures: 0 --' third.log \
+            || { echo "::error::a start whose named value differs observed the snapshot's"; exit 1; }
+
       - name: The hosted arrangement
         working-directory: checks/hosted
         run: |

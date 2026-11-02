@@ -66,17 +66,48 @@ okrun = "openkal-tools@0.4.0"
 #                      each function and object in a section of its own, so the
 #                      link's `--gc-sections` discards what nothing reaches at
 #                      that grain, not at a translation unit's.
+#
+# AND, FROM 0.23.0, WHAT A PROGRAM IS OBSERVED AND HELD BY (mcpp design
+# 2026-11-03, part 4):
+#   -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer
+#                      every frame is a link of the chain the implementation's
+#                      sampler and fault report walk (openkal 0.23, entry 56);
+#   -fstack-protector-strong -mstack-protector-guard=global
+#                      a frame with an array or an address taken is guarded,
+#                      the guard a variable the C library sets from the
+#                      environment's randomness, not a thread pointer's slot,
+#                      which an image has none of;
+#   -ftrivial-auto-var-init=zero
+#                      a local variable read before it is written reads zero;
+#   -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST
+#                      the C++ library's cheap checks: an index out of bounds
+#                      ends the program rather than reading beyond.
 [platform.build]
-cflags   = ["-fPIC", "-femulated-tls", "-fvisibility=hidden", "-fasynchronous-unwind-tables", "-Xclang", "-fstack-clash-protection", "-ffunction-sections", "-fdata-sections"]
-cxxflags = ["-fPIC", "-femulated-tls", "-fvisibility=hidden", "-fasynchronous-unwind-tables", "-Xclang", "-fstack-clash-protection", "-ffunction-sections", "-fdata-sections"]
+cflags   = ["-fPIC", "-femulated-tls", "-fvisibility=hidden", "-fasynchronous-unwind-tables", "-Xclang", "-fstack-clash-protection", "-ffunction-sections", "-fdata-sections",
+            "-fno-omit-frame-pointer", "-mno-omit-leaf-frame-pointer", "-fstack-protector-strong", "-mstack-protector-guard=global", "-ftrivial-auto-var-init=zero"]
+cxxflags = ["-fPIC", "-femulated-tls", "-fvisibility=hidden", "-fasynchronous-unwind-tables", "-Xclang", "-fstack-clash-protection", "-ffunction-sections", "-fdata-sections",
+            "-fno-omit-frame-pointer", "-mno-omit-leaf-frame-pointer", "-fstack-protector-strong", "-mstack-protector-guard=global", "-ftrivial-auto-var-init=zero",
+            "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST"]
 asmflags = ["-fPIC", "-femulated-tls", "-fvisibility=hidden", "-fasynchronous-unwind-tables", "-Xclang", "-fstack-clash-protection"]
+
+# x86-64: an indirect branch lands on `endbr64` and a return is checked against
+# a shadow stack, where the system enforces either (-fcf-protection=full); the
+# instructions are no-ops where it does not.
+[platform.build.'cfg(arch = "x86_64")']
+cflags   = ["-fcf-protection=full"]
+cxxflags = ["-fcf-protection=full"]
+asmflags = ["-fcf-protection=full"]
 
 # AArch64: two systems reserve the platform register, and the outlined atomic
 # helpers read the processor's features through an operating system's interface.
+# A return address is signed and an indirect branch lands on a mark
+# (-mbranch-protection=standard: pac-ret and BTI), which a processor without
+# them executes as no-ops; the loader asks for the marks to be enforced where
+# every object of the image carries them (openkal 0.23, KAL_EXEC_MAP_BTI).
 [platform.build.'cfg(arch = "aarch64")']
-cflags   = ["-ffixed-x18", "-mno-outline-atomics"]
-cxxflags = ["-ffixed-x18", "-mno-outline-atomics"]
-asmflags = ["-ffixed-x18", "-mno-outline-atomics"]
+cflags   = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=standard"]
+cxxflags = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=standard"]
+asmflags = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=standard"]
 
 # The link, by `ld.lld` itself: position-independent, every loadable segment
 # aligned to 64 KiB (the largest protection granularity among the systems),
@@ -92,12 +123,14 @@ asmflags = ["-ffixed-x18", "-mno-outline-atomics"]
 # image's bytes (openkal 0.23: a loader given that base applies only the
 # relocations that name a symbol, and the image's read-only-after-relocation
 # data are its file's pages), and `okld check` accepts it, against the images it
-# needs, before it is published.
+# needs, before it is published. An image is named by its build-id
+# (`--build-id=sha1`, 0.23.0), by which a debugger finds what `okld debug-split`
+# keeps apart from it.
 [platform.link]
 driver = "lld"
 start  = "ok_main"
 flags  = ["-shared", "-z", "max-page-size=65536", "-z", "pack-relative-relocs", "-z", "now", "-z", "noexecstack",
-          "--hash-style=both", "--gc-sections", "--icf=safe", "--eh-frame-hdr"]
+          "--hash-style=both", "--gc-sections", "--icf=safe", "--eh-frame-hdr", "--build-id=sha1"]
 inputs = [{ from = ["okld", "note-source"], as = "ok-notes.S" }]
 exe    = "{name}.oke"
 shared = "lib{name}.okso"
