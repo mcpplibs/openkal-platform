@@ -30,7 +30,7 @@ mcpp pack --target x86_64-openkal --pkg-format okb        # one file okrun runs 
 | targets | `x86_64-openkal`, `aarch64-openkal` |
 | toolchain | `llvm@23.1.3` |
 | layers | `c-abi` openkal-musl (`posix`), `c++-abi` and `compiler-runtime` openkal-llvm-runtime |
-| tools | `okld`, `okrun` (openkal-tools) |
+| tools | `okld`, `okrun`, `okprof` (openkal-tools) |
 | build | `-fPIC -femulated-tls -fvisibility=hidden -fasynchronous-unwind-tables`, stack-clash protection, `-ffunction-sections -fdata-sections`; frame pointers, `-fstack-protector-strong -mstack-protector-guard=global`, `-ftrivial-auto-var-init=zero`, libc++'s fast hardening (0.23.0); on x86_64 `-fcf-protection=full`; on aarch64 `-ffixed-x18 -mno-outline-atomics -mbranch-protection=standard` |
 | link | `ld.lld`, entry `ok_main`, 64 KiB pages, relative relocations packed, `--gc-sections --icf=safe`, `--build-id=sha1`, the image notes produced by `okld note-source` |
 | seal | `okld note`; `okld place`, the writable segments computed for the base the image's bytes choose (openkal 0.23); then `okld check --with` the shared images the program needs |

@@ -41,10 +41,13 @@ compiler-runtime = "openkal-llvm-runtime@0.18.0"
 c-abi            = { name = "openkal-musl", version = "0.27.0", default-features = false, features = ["posix", "malloc-mimalloc"] }
 
 # Built for the building machine: `okld` writes and checks the notes, `okrun`
-# runs an image.
+# runs an image, `okprof` reads what a measured run recorded (0.23.0: the
+# order of a start's first executions, which a producer lays its code out by
+# and writes as the touch note).
 [platform.tools]
-okld  = "openkal-tools@0.4.0"
-okrun = "openkal-tools@0.4.0"
+okld   = "openkal-tools@0.4.0"
+okrun  = "openkal-tools@0.4.0"
+okprof = "openkal-tools@0.4.0"
 
 # Every unit of an image (SPEC 12.2):
 #   -fPIC              the image is ET_DYN and has no text relocation;
