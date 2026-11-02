@@ -32,8 +32,8 @@ mcpp pack --target x86_64-openkal --pkg-format okb        # one file okrun runs 
 | layers | `c-abi` openkal-musl (`posix`), `c++-abi` and `compiler-runtime` openkal-llvm-runtime |
 | tools | `okld`, `okrun` (openkal-tools) |
 | build | `-fPIC -femulated-tls -fvisibility=hidden -fasynchronous-unwind-tables`, stack-clash protection, `-ffunction-sections -fdata-sections`; on aarch64 `-ffixed-x18 -mno-outline-atomics` |
-| link | `ld.lld`, entry `ok_main`, 64 KiB pages, `--gc-sections --icf=safe`, the image notes produced by `okld note-source` |
-| seal | `okld note`, then `okld check --with` the shared images the program needs |
+| link | `ld.lld`, entry `ok_main`, 64 KiB pages, relative relocations packed, `--gc-sections --icf=safe`, the image notes produced by `okld note-source` |
+| seal | `okld note`; `okld place`, the writable segments computed for the base the image's bytes choose (openkal 0.23); then `okld check --with` the shared images the program needs |
 | naming | `{name}.oke`, `lib{name}.okso` |
 | runner | `okrun {}`, on a machine of the image's architecture; `hosts` the systems and architectures okrun is built for, where a package that needs it can run |
 | carrier | openkal-run, section `.oke`, entry `carrier/main.cpp`: with nothing carried the runner of a package, with an image or a zip of images the program that runs them from memory |

@@ -143,6 +143,13 @@ jobs:
           "$okld" bundle check "$okb"
           "$okrun" "$okb" one two | tee okb.log
           grep -q "image ok: 3 args" okb.log || { echo "::error::the okb's output"; exit 1; }
+          # SEALED AT ITS BASE (0.23.0): the image states a placement, and runs
+          # the same placed anywhere.
+          image=$(find target -path "*${{ matrix.arch }}-openkal*" -path '*bin*' -name image.oke -type f | head -1)
+          "$okld" inspect "$image" | tee inspect.log
+          grep -Eq '^placement +0x[0-9a-f]+, [1-8] writable' inspect.log || { echo "::error::the sealed image states no placement"; exit 1; }
+          OKRUN_PLACE=0 "$okrun" "$image" one two | tee anywhere.log
+          grep -q "image ok: 3 args" anywhere.log || { echo "::error::the image placed anywhere"; exit 1; }
 
       - name: The hosted arrangement
         working-directory: checks/hosted
