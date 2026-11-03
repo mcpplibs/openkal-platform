@@ -104,13 +104,17 @@ asmflags = ["-fcf-protection=full"]
 # AArch64: two systems reserve the platform register, and the outlined atomic
 # helpers read the processor's features through an operating system's interface.
 # A return address is signed and an indirect branch lands on a mark
-# (-mbranch-protection=standard: pac-ret and BTI), which a processor without
-# them executes as no-ops; the loader asks for the marks to be enforced where
-# every object of the image carries them (openkal 0.23, KAL_EXEC_MAP_BTI).
+# (-mbranch-protection=pac-ret+bti), which a processor without them executes as
+# no-ops; the loader asks for the marks to be enforced where every object of the
+# image carries them (openkal 0.23, KAL_EXEC_MAP_BTI). Not `standard': clang 23
+# counts the guarded control stack in it (__ARM_FEATURE_GCS_DEFAULT), whose
+# unwinder needs <arm_acle.h> of a C library and a system that enables the
+# stack for a program, neither of which an image has --- libunwind's build
+# failed on it (CI, aarch64).
 [platform.build.'cfg(arch = "aarch64")']
-cflags   = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=standard"]
-cxxflags = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=standard"]
-asmflags = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=standard"]
+cflags   = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=pac-ret+bti"]
+cxxflags = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=pac-ret+bti"]
+asmflags = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=pac-ret+bti"]
 
 # The link, by `ld.lld` itself: position-independent, every loadable segment
 # aligned to 64 KiB (the largest protection granularity among the systems),
