@@ -7,7 +7,7 @@
 //
 // ITS IMAGES STORED, OR COMPRESSED (0.23.0): stored by default, an okb whose
 // images are mapped where they lie; `--compress gzip` (or `[pack] compress =
-// "gzip"`, which mcpp 2026.11.2.3 and later state as MCPP_PACK_COMPRESS) stores
+// "gzip"`, which mcpp 2026.11.3.1 and later state as MCPP_PACK_COMPRESS) stores
 // them compressed, an okb kept small on disk that a runner expands into its
 // cache when it first runs it --- the economy form (mcpp design 2026-11-03
 // part 4 §16). `zstd' and `xz' are a tar's, and refused.

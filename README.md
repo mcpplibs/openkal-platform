@@ -63,8 +63,12 @@ library's initialiser reads its directories first, is given the directories it
 was granted rather than the implementation's defaults (openkal-musl 0.27.1,
 openkal-llvm-runtime 0.18.2 and openkal-image 0.4.2 are built over it).
 
+0.23.2 names openkal-musl 0.27.2 and openkal-llvm-runtime 0.18.3. The C
+library's image dependency selects openkal-ld 0.4.2, matching the loader in
+this platform's version group. The earlier 0.23.1 archive remains unchanged.
+
 These words reach every unit of the target, the std module included, from mcpp
-2026.11.2.3 on, which this release requires (`[package] mcpp`): clang records
+2026.11.3.1 on, which this release requires (`[package] mcpp`): clang records
 `-fcf-protection` in a module's BMI, and an earlier mcpp compiled the std module
 without the platform's words, so every unit that imported it on x86_64 was
 refused.
