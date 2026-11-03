@@ -57,6 +57,12 @@ its fast mode checks; indirect branches land on marks and returns are checked
 are no-ops where it does not. An image is named by its build-id, by which a
 debugger finds what `okld debug-split` keeps apart.
 
+0.23.1 names openkal-macos 0.21.3, whose answers to an initialiser that runs
+before its own are the loader's record: a hosted program on macOS, whose C
+library's initialiser reads its directories first, is given the directories it
+was granted rather than the implementation's defaults (openkal-musl 0.27.1,
+openkal-llvm-runtime 0.18.2 and openkal-image 0.4.2 are built over it).
+
 These words reach every unit of the target, the std module included, from mcpp
 2026.11.2.3 on, which this release requires (`[package] mcpp`): clang records
 `-fcf-protection` in a module's BMI, and an earlier mcpp compiled the std module
