@@ -4,6 +4,13 @@
 // `okld bundle --package`, which reads the package's mcpp-package.json
 // (mcpp SPEC-014 §4.5): the images of each architecture and the entry. The
 // okb is written beside the staged tree, in the project's `target/dist/`.
+//
+// ITS IMAGES STORED, OR COMPRESSED (0.23.0): stored by default, an okb whose
+// images are mapped where they lie; `--compress gzip` (or `[pack] compress =
+// "gzip"`, which mcpp 2026.11.3.1 and later state as MCPP_PACK_COMPRESS) stores
+// them compressed, an okb kept small on disk that a runner expands into its
+// cache when it first runs it --- the economy form (mcpp design 2026-11-03
+// part 4 §16). `zstd' and `xz' are a tar's, and refused.
 import mcpp;
 import mcpp.plugins;           // the package reader
 import mcpp.plugins.platform;  // provide_format
@@ -12,14 +19,22 @@ import std;
 namespace pf = mcpp::plugins::platform;
 
 int main() {
+    const char* stated_compress = std::getenv("MCPP_PACK_COMPRESS");
+    const std::string compress = stated_compress ? stated_compress : "";
+    if (!compress.empty() && !compress.starts_with("gzip") && !compress.starts_with("none")) {
+        std::println(std::cerr, "openkal-platform: an okb stores its images compressed with DEFLATE (--compress gzip) "
+                                "or as they are (--compress none); --compress {} is a tar's", compress);
+        return 1;
+    }
     const auto stated = pf::provide_format("okb",
-        [](const mcpp::plugins::package::info& p, mcpp::action& a) {
+        [&](const mcpp::plugins::package::info& p, mcpp::action& a) {
             const auto out = std::format("{}/{}-{}.okb",
                 std::filesystem::path(p.root).parent_path().generic_string(), p.name, p.version);
             a.arg(mcpp::dep_bin("openkal-tools", "okld"))
              .arg("bundle").arg(out.c_str())
-             .arg("--package").arg("${mcpp.stage_dir}")
-             .input((p.root + "/mcpp-package.json").c_str())
+             .arg("--package").arg("${mcpp.stage_dir}");
+            if (compress.starts_with("gzip")) a.arg("--compress");
+            a.input((p.root + "/mcpp-package.json").c_str())
              .output(out.c_str());
             return true;
         });
