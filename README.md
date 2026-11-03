@@ -67,6 +67,12 @@ openkal-llvm-runtime 0.18.2 and openkal-image 0.4.2 are built over it).
 library's image dependency selects openkal-ld 0.4.2, matching the loader in
 this platform's version group. The earlier 0.23.1 archive remains unchanged.
 
+0.23.3 names openkal-linux 0.24.1, openkal-musl 0.27.3,
+openkal-llvm-runtime 0.18.4 and all four image packages at 0.4.3. The Linux
+implementation and the native runner require Landlock ABI 3 before claiming
+confinement of read-only grants; earlier ABIs cannot restrict file truncation.
+The ABI probe cache uses atomic accesses during concurrent first queries.
+
 These words reach every unit of the target, the std module included, from mcpp
 2026.11.3.1 on, which this release requires (`[package] mcpp`): clang records
 `-fcf-protection` in a module's BMI, and an earlier mcpp compiled the std module
