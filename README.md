@@ -57,6 +57,12 @@ its fast mode checks; indirect branches land on marks and returns are checked
 are no-ops where it does not. An image is named by its build-id, by which a
 debugger finds what `okld debug-split` keeps apart.
 
+These words reach every unit of the target, the std module included, from mcpp
+2026.11.2.3 on, which this release requires (`[package] mcpp`): clang records
+`-fcf-protection` in a module's BMI, and an earlier mcpp compiled the std module
+without the platform's words, so every unit that imported it on x86_64 was
+refused.
+
 An image of this platform states its placement, so a runner places it at a base
 of the boot and can make a snapshot of its initialisers, which openkal-musl and
 openkal-llvm-runtime take part in (`checks/snapshot`; openkal-image

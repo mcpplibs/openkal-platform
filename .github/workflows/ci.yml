@@ -16,6 +16,10 @@ name: CI
 # selects, whose version group may name another openkal than the launcher's os.
 # A dispatch, or the repository variable MCPP_SOURCE_REF, may name a branch of
 # mcpp instead, which the latest released mcpp builds and which is then used.
+# 0.23.0 measures with 2026.11.2.3: from it the std module is compiled with
+# the platform's compile words, and this platform's `-fcf-protection=full`
+# recorded in an importer's command and not in the module's refused the import
+# (the release candidate, through MCPP_SOURCE_REF, until it is released).
 
 on:
   push:
@@ -30,7 +34,7 @@ on:
 
 env:
   MCPP_SOURCE_REF: ${{ github.event.inputs.mcpp_ref || vars.MCPP_SOURCE_REF || '' }}
-  MCPP_VERSION: 2026.11.2.1
+  MCPP_VERSION: 2026.11.2.3
   XLINGS_VERSION: v2026.10.26.1
   XLINGS_NON_INTERACTIVE: '1'
 
