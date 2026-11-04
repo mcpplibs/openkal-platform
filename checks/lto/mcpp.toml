@@ -1,0 +1,16 @@
+[package]
+name = "image-lto"
+version = "0.1.0"
+
+[language]
+standard = "c++23"
+
+[build]
+cxxflags = ["-flto=thin"]
+
+[target.'cfg(os = "openkal")']
+platform = { path = "../.." }
+
+[targets.image-lto]
+kind = "bin"
+main = "src/main.cpp"
