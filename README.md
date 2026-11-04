@@ -41,6 +41,11 @@ mcpp pack --target x86_64-openkal --pkg-format okb        # one file okrun runs 
 | hosted | the toolchain and the layers for the host triples, over the system's openkal implementation |
 | versions | the release group of the openkal family |
 
+Platform 0.23.6 also sets emulated TLS for the linker's LTO code generation.
+Compiling bitcode with `-femulated-tls` alone does not retain that choice at the
+final link. Both ordinary object files and ThinLTO builds use the platform's
+emulated thread-local storage.
+
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
 another platform, or none, with `platform = "..."` or `--platform`.
