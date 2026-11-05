@@ -46,6 +46,10 @@ Compiling bitcode with `-femulated-tls` alone does not retain that choice at the
 final link. Both ordinary object files and ThinLTO builds use the platform's
 emulated thread-local storage.
 
+Platform 0.23.7 selects openkal-musl 0.27.6 and openkal-llvm-runtime 0.18.7.
+The C library calls the optional resolved-name operation directly, preserving
+its fallback, error and output-bound checks.
+
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
 another platform, or none, with `platform = "..."` or `--platform`.
