@@ -46,7 +46,8 @@ Compiling bitcode with `-femulated-tls` alone does not retain that choice at the
 final link. Both ordinary object files and ThinLTO builds use the platform's
 emulated thread-local storage.
 
-Platform 0.23.7 selects openkal-musl 0.27.6 and openkal-llvm-runtime 0.18.7.
+Platform 0.24.0 selects openkal-musl 0.28.0, openkal-llvm-runtime 0.19.0
+and image bindings 0.5.0 over the OpenKal 0.24 implementations.
 The C library calls the optional resolved-name operation directly, preserving
 its fallback, error and output-bound checks.
 
