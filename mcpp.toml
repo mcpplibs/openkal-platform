@@ -33,6 +33,10 @@ carrier   = { package = "openkal-run@0.5.0", section = ".oke", main = "carrier/m
 # architecture as one file okrun runs (openkal-image docs/okb.md).
 plugin    = "build.mcpp"
 
+# A program launched under a host debugger, distinct from a board debug server.
+[platform.runners]
+debuggee = ["okrun", "--debugger", "{}"]
+
 # The C library and the C++ run-time inside an image. A package of the graph
 # that provides a layer takes its place (`provides`), and `false` leaves it out.
 [platform.layers]
@@ -137,11 +141,14 @@ asmflags = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=pac-ret+
 driver = "lld"
 start  = "ok_main"
 flags  = ["-shared", "-z", "max-page-size=65536", "-z", "pack-relative-relocs", "-z", "now", "-z", "noexecstack",
-          "--hash-style=both", "--gc-sections", "--icf=safe", "--eh-frame-hdr", "--build-id=sha1",
+          "--hash-style=both", "--gc-sections", "--icf=safe", "--eh-frame-hdr", "--build-id=sha1", "--emit-relocs",
           "-mllvm", "-emulated-tls"]
 inputs = [{ from = ["okld", "note-source"], as = "ok-notes.S" }]
 exe    = "{name}.oke"
 shared = "lib{name}.okso"
+# The declarative seal is also available while preparing the platform's
+# build program. Its program statement replaces this sequence with the selected
+# toolchain's objcopy followed by the same note/place/check operations.
 seal   = [["okld", "note", "{}"], ["okld", "place", "{}"], ["okld", "check", "{}", "--with", "{needed}"]]
 
 # A host triple selecting this platform (`x86_64-linux-gnu`, `aarch64-macos`,

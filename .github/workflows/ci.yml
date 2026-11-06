@@ -155,6 +155,11 @@ jobs:
           OKRUN_PLACE=0 "$okrun" "$image" one two | tee anywhere.log
           grep -q "image ok: 3 args" anywhere.log || { echo "::error::the image placed anywhere"; exit 1; }
 
+      - name: Debug relocations and the selected debuggee runner
+        run: |
+          py=python3; command -v python3 > /dev/null 2>&1 && python3 -c '' 2>/dev/null || py=python
+          "$py" .github/scripts/check-debug-producer.py --arch '${{ matrix.arch }}'
+
       - name: ThinLTO keeps thread-local storage emulated
         working-directory: checks/lto
         run: |
