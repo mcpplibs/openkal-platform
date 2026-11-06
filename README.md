@@ -32,12 +32,13 @@ mcpp pack --target x86_64-openkal --pkg-format okb        # one file okrun runs 
 | layers | `c-abi` openkal-musl (`posix`), `c++-abi` and `compiler-runtime` openkal-llvm-runtime |
 | tools | `okld`, `okrun`, `okprof` (openkal-tools) |
 | build | `-fPIC -femulated-tls -fvisibility=hidden -fasynchronous-unwind-tables`, stack-clash protection, `-ffunction-sections -fdata-sections`; frame pointers, `-fstack-protector-strong -mstack-protector-guard=global`, `-ftrivial-auto-var-init=zero`, libc++'s fast hardening (0.23.0); on x86_64 `-fcf-protection=full`; on aarch64 `-ffixed-x18 -mno-outline-atomics -mbranch-protection=pac-ret+bti` (not `standard`, which clang 23 counts the guarded control stack in) |
-| link | `ld.lld`, entry `ok_main`, 64 KiB pages, relative relocations packed, `--gc-sections --icf=safe`, `--build-id=sha1`, the image notes produced by `okld note-source` |
-| seal | `okld note`; `okld place`, the writable segments computed for the base the image's bytes choose (openkal 0.23); then `okld check --with` the shared images the program needs |
+| link | `ld.lld`, entry `ok_main`, 64 KiB pages, relative relocations packed, `--gc-sections --icf=safe`, `--build-id=sha1`, retained debug relocations (0.24.0), the image notes produced by `okld note-source` |
+| seal | the selected LLVM toolchain's `llvm-objcopy` prunes ordinary static relocations (0.24.0); `okld note`; `okld place`, the writable segments computed for the base the image's bytes choose (openkal 0.23); then `okld check --with` the shared images the program needs |
 | naming | `{name}.oke`, `lib{name}.okso` |
 | runner | `okrun {}`, on a machine of the image's architecture; `hosts` the systems and architectures okrun is built for, where a package that needs it can run |
+| runner `debuggee` | `okrun --debugger {}` for a host debugger (0.24.0) |
 | carrier | openkal-run, section `.oke`, entry `carrier/main.cpp`: with nothing carried the runner of a package, with an image or a zip of images the program that runs them from memory |
-| plugin | `build.mcpp` provides the `okb` package format through `okld bundle --package` |
+| plugin | `build.mcpp` provides the `okb` package format through `okld bundle --package` and selects the toolchain program used by the image seal |
 | hosted | the toolchain and the layers for the host triples, over the system's openkal implementation |
 | versions | the release group of the openkal family |
 
@@ -46,13 +47,48 @@ Compiling bitcode with `-femulated-tls` alone does not retain that choice at the
 final link. Both ordinary object files and ThinLTO builds use the platform's
 emulated thread-local storage.
 
-Platform 0.23.7 selects openkal-musl 0.27.6 and openkal-llvm-runtime 0.18.7.
+Platform 0.24.0 selects openkal-musl 0.28.0, openkal-llvm-runtime 0.19.0
+and image bindings 0.5.0 over the OpenKal 0.24 implementations.
 The C library calls the optional resolved-name operation directly, preserving
 its fallback, error and output-bound checks.
 
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
 another platform, or none, with `platform = "..."` or `--platform`.
+
+## Source debugging
+
+Platform 0.24.0 retains the relocation information used by image 0.5.0's
+debugger object. Debug information follows the selected build profile, including
+custom profiles; the seal preserves ELF zlib compression. A profile with
+`debug = false` produces no source debug information.
+
+The `debuggee` runner supplies the command for a host debugger:
+
+```bash
+mcpp run --target x86_64-openkal --runner debuggee --print-launch
+mcpp run --target x86_64-openkal --profile inspect --runner debuggee --print-launch
+```
+
+The second command uses a custom profile declared as follows:
+
+```toml
+[profile.inspect]
+opt = 0
+debug = true
+split_debuginfo = "off"
+```
+
+The launch descriptor includes the runner, `--debugger`, the image, working
+directory and environment. A debugger starts that command. GDB reads the JIT
+interface; an LLDB session enables it with
+`settings set plugin.jit-loader.gdb.enable on` before starting the program.
+This named runner is a debugged program, not a board debug-server command.
+
+The verified source-debugger combination is Linux x86-64 with the GDB and LLDB
+bundled in CLion 2026.1.5.2. A release without DWARF retains symbol-level
+breakpoints where its symbols remain. External debug sidecars and native
+debugger frontends on other hosts are not qualified by this check.
 
 ## What an image is observed and held by (0.23.0)
 

@@ -1,0 +1,22 @@
+[package]
+name = "debug-producer"
+version = "0.1.0"
+
+[target.'cfg(os = "openkal")']
+platform = { path = "../.." }
+
+# This fixture measures the image producer, without recompiling the hosted
+# C/C++ libraries for every profile. Its entry needs no runtime services.
+[target.'cfg(os = "openkal")'.layers]
+c-abi = false
+"c++-abi" = false
+compiler-runtime = false
+
+[targets.debug-producer]
+kind = "bin"
+main = "src/main.c"
+
+[profile.inspect]
+opt = 0
+debug = true
+split_debuginfo = "off"

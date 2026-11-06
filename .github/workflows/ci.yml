@@ -34,7 +34,7 @@ on:
 
 env:
   MCPP_SOURCE_REF: ${{ github.event.inputs.mcpp_ref || vars.MCPP_SOURCE_REF || '' }}
-  MCPP_VERSION: 2026.11.3.1
+  MCPP_VERSION: 2026.11.5.1
   XLINGS_VERSION: v2026.10.26.1
   XLINGS_NON_INTERACTIVE: '1'
 
@@ -154,6 +154,11 @@ jobs:
           grep -Eq '^placement +0x[0-9a-f]+, [1-8] writable' inspect.log || { echo "::error::the sealed image states no placement"; exit 1; }
           OKRUN_PLACE=0 "$okrun" "$image" one two | tee anywhere.log
           grep -q "image ok: 3 args" anywhere.log || { echo "::error::the image placed anywhere"; exit 1; }
+
+      - name: Debug relocations and the selected debuggee runner
+        run: |
+          py=python3; command -v python3 > /dev/null 2>&1 && python3 -c '' 2>/dev/null || py=python
+          "$py" .github/scripts/check-debug-producer.py --arch '${{ matrix.arch }}'
 
       - name: ThinLTO keeps thread-local storage emulated
         working-directory: checks/lto

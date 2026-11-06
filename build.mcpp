@@ -19,6 +19,27 @@ import std;
 namespace pf = mcpp::plugins::platform;
 
 int main() {
+    if (std::string_view(mcpp::target()).ends_with("-openkal")) {
+        // Keep source relocations without making debug support depend on a
+        // profile's name. Prune ordinary static link relocations before the
+        // image's notes/placement are written; those appended bytes must not
+        // pass through objcopy afterwards.
+        // The API path is UTF-8, including on Windows. Preserve those bytes
+        // for the command and convert explicitly only for filesystem queries.
+        auto objcopy = std::format("{}/bin/llvm-objcopy", mcpp::toolchain_dir());
+        if (!std::filesystem::is_regular_file(std::filesystem::u8path(objcopy))) objcopy += ".exe";
+        if (!std::filesystem::is_regular_file(std::filesystem::u8path(objcopy))) {
+            std::println(std::cerr, "openkal-platform: the selected LLVM toolchain has no llvm-objcopy");
+            return 1;
+        }
+        mcpp::seal(0, objcopy.c_str());
+        for (const char* word : {"--remove-section=.rela.*", "--remove-section=!.rela.debug_*",
+                                 "--remove-section=!.rela.dyn", "--remove-section=!.rela.plt", "{}"})
+            mcpp::seal(0, word);
+        for (const char* word : {"okld", "note", "{}"}) mcpp::seal(1, word);
+        for (const char* word : {"okld", "place", "{}"}) mcpp::seal(2, word);
+        for (const char* word : {"okld", "check", "{}", "--with", "{needed}"}) mcpp::seal(3, word);
+    }
     const char* stated_compress = std::getenv("MCPP_PACK_COMPRESS");
     const std::string compress = stated_compress ? stated_compress : "";
     if (!compress.empty() && !compress.starts_with("gzip") && !compress.starts_with("none")) {
