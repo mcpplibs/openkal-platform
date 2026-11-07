@@ -69,6 +69,12 @@ openkal-windows, where the linker's default was 1 MiB (an image recursing deeply
 on its main thread, clangd.okb with `--sync` over the MSVC headers, overflowed
 it on Windows; openkal-image#32).
 
+Platform 0.24.4 changes one member: openkal-image 0.5.3, whose runner enters an
+image in its convention's floating-point state (openkal SPEC 12.2): the x87 at
+extended precision and MXCSR 0x1F80 on x86-64, FPCR zero on AArch64. A thread of
+Windows begins with the x87 at double precision, under which openkal-musl's
+`strtod("0.4")` read `0x1.99999999998p-2` (openkal-image#33).
+
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
 another platform, or none, with `platform = "..."` or `--platform`.
