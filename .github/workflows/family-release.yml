@@ -1,0 +1,128 @@
+name: Family release
+
+# The release of the version group this repository states (mcpp design
+# 2026-11-07, §4.2.2, A5 and A6), run on every change of the group and on demand:
+#
+#   group     every member's tag and its GitCode mirror (the same bytes); the
+#             open issues of the members' repositories, for the release notes;
+#             the group's one index change, written into mcpp-index's main and
+#             kept as an artifact (`index-change.patch`), from which the
+#             maintainer opens the one index PR
+#   resolve   over that candidate index, the released mcpp and the one under
+#             review resolve an image of the group and build it; and for a
+#             patch group, the C library and the C++ run-time objects the image
+#             links keep every global symbol of the previous patch's
+#
+# The repository holds no credential for mcpp-index: the PR is opened from the
+# artifact (`tools/family_release.py index` does the same locally).
+
+on:
+  pull_request:
+    paths: [mcpp.toml, tools/family_release.py, .github/workflows/family-release.yml]
+  workflow_dispatch:
+    inputs:
+      also:
+        description: "Packages released with the group, as NAME@VERSION separated by spaces (os@0.3.1)"
+        required: false
+        default: ""
+      mcpp_ref:
+        description: "Branch of mcpp-community/mcpp to resolve with as the mcpp under review (empty = the released mcpp)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+env:
+  MCPP_PREVIOUS: 2026.11.5.1
+  MCPP_SOURCE_REF: ${{ github.event.inputs.mcpp_ref || vars.MCPP_SOURCE_REF || '' }}
+  XLINGS_VERSION: v2026.10.26.1
+  XLINGS_NON_INTERACTIVE: '1'
+  GITHUB_TOKEN: ${{ github.token }}
+
+jobs:
+  group:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tags and mirrors
+        run: |
+          also=(); for spec in ${{ github.event.inputs.also }}; do also+=(--also "$spec"); done
+          echo "ALSO=${also[*]}" >> "$GITHUB_ENV"
+          python3 tools/family_release.py "${also[@]}" check | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Open issues of the members
+        run: python3 tools/family_release.py $ALSO defects | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: The group's one index change
+        run: |
+          git clone --quiet --depth 1 https://github.com/mcpplibs/mcpp-index.git "$RUNNER_TEMP/index"
+          python3 tools/family_release.py $ALSO index "$RUNNER_TEMP/index"
+          git -C "$RUNNER_TEMP/index" diff > index-change.patch
+          git -C "$RUNNER_TEMP/index" diff --stat
+      - uses: actions/upload-artifact@v4
+        with:
+          name: index-change
+          path: index-change.patch
+          retention-days: 30
+
+  resolve:
+    needs: group
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: index-change
+      - name: xlings, the released mcpp and the one under review
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash -s "$XLINGS_VERSION"
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+          for attempt in 1 2 3 4 5; do
+            xlings update > /dev/null 2>&1 || true
+            if xlings install "mcpp@$MCPP_PREVIOUS" -y -g; then break; fi
+            [ "$attempt" = 5 ] && exit 1
+            sleep 60
+          done
+          previous=$(command -v mcpp)
+          echo "MCPP_OLD=$previous" >> "$GITHUB_ENV"
+          current="$previous"
+          if [ -n "$MCPP_SOURCE_REF" ]; then
+            src="$RUNNER_TEMP/mcpp-src"
+            git clone --quiet --depth 1 --branch "$MCPP_SOURCE_REF" https://github.com/mcpp-community/mcpp.git "$src"
+            rm -f "$src/.xlings.json"
+            ( cd "$src" && mcpp build --release )
+            current=$(find "$src/target" -type f -name mcpp -path '*/bin/*' | head -1)
+          else
+            xlings install mcpp -y -g > /dev/null 2>&1 || true
+            current=$(command -v mcpp)
+          fi
+          echo "MCPP_NEW=$current" >> "$GITHUB_ENV"
+          "$previous" --version; "$current" --version
+          "$current" self config --mirror GLOBAL > /dev/null
+      - name: The candidate index (the published one with the group's change)
+        run: |
+          git clone --quiet --depth 1 https://github.com/mcpplibs/mcpp-index.git "$RUNNER_TEMP/index"
+          git -C "$RUNNER_TEMP/index" apply "$GITHUB_WORKSPACE/index-change.patch"
+          python3 "$RUNNER_TEMP/index/tests/prepare_builtin_index.py" --home "$HOME/.mcpp" --source "$RUNNER_TEMP/index"
+      - name: Both mcpp releases resolve and build an image of the group
+        run: |
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("mcpp.toml","rb"))["package"]["version"])')
+          echo "PLATFORM=openkal-platform@$version" >> "$GITHUB_ENV"
+          for mcpp in "$MCPP_OLD" "$MCPP_NEW"; do
+            dir="$RUNNER_TEMP/probe-$(basename "$(dirname "$(dirname "$mcpp")")")"
+            mkdir -p "$dir/src"
+            printf '[package]\nname = "probe"\nversion = "0.1.0"\n' > "$dir/mcpp.toml"
+            printf 'import std;\nint main() { std::println("group ok"); }\n' > "$dir/src/main.cpp"
+            ( cd "$dir" && "$mcpp" build --target x86_64-openkal --platform "openkal-platform@$version" ) \
+              || { echo "::error::$("$mcpp" --version) did not build an image of the group"; exit 1; }
+          done
+      - name: A patch keeps every global symbol of the previous patch
+        run: |
+          version=${PLATFORM#*@}
+          patch=${version##*.}
+          if [ "$patch" = 0 ]; then echo "a minor version: no previous patch to compare"; exit 0; fi
+          previous="openkal-platform@${version%.*}.$((patch - 1))"
+          nm=$(find "$HOME/.mcpp/registry/data/xpkgs" -path '*xim-x-llvm*' -name llvm-nm -type f | head -1)
+          python3 tools/family_release.py exports "$previous" "$PLATFORM" --mcpp "$MCPP_NEW" --nm "$nm" | tee -a "$GITHUB_STEP_SUMMARY"

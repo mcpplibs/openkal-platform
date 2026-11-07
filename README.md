@@ -52,6 +52,11 @@ and image bindings 0.5.0 over the OpenKal 0.24 implementations.
 The C library calls the optional resolved-name operation directly, preserving
 its fallback, error and output-bound checks.
 
+Platform 0.24.1 corrects that group: openkal-musl 0.28.1 keeps a directory's
+whole name however long, openkal-llvm-runtime 0.19.1 reads a name beneath a
+Windows volume as absolute, openkal-macos 0.22.1 sizes its confinement rules to
+the grants of each start, and openkal-image 0.5.1 builds okrun over it.
+
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
 another platform, or none, with `platform = "..."` or `--platform`.
@@ -143,9 +148,28 @@ architecture and run by okrun (`checks/host-graph`).
 
 ## Version group
 
-`[platform.versions]` names one version of each package of the family. The
-packages pin one another exactly; a graph holding another version of one of
-them is refused, naming the group and the two remedies.
+`[platform.versions]` names one version of each package of the family. From
+0.24.1 the packages name one another by compatible ranges (`^0.28.0`), and the
+group chooses: mcpp 2026.11.7.1 and later resolve each member to the group's
+version, and an earlier mcpp refuses a graph holding another version of one of
+them, naming the group and the two remedies. A patch version of a member keeps
+every symbol its previous patch defines.
+
+A fix of one member is that member's release and a patch of this group. The
+group is released as one index change:
+
+```bash
+python3 tools/family_release.py check            # tags, GitCode mirrors, the index
+python3 tools/family_release.py defects          # open issues, for the release notes
+python3 tools/family_release.py index ../mcpp-index   # the group's one index change
+python3 tools/family_release.py exports openkal-platform@0.24.0 openkal-platform@0.24.1
+```
+
+`.github/workflows/family-release.yml` runs them on every change of the group:
+it keeps the index change as an artifact, resolves an image of the group with
+the released mcpp and the one under review over the candidate index, and
+compares the global symbols of the C library and the C++ run-time with the
+previous patch's.
 
 ## Checks
 
@@ -156,6 +180,7 @@ them is refused, naming the group and the two remedies.
 | `checks/hosted` | the hosted arrangement runs on Linux, macOS and Windows |
 | `checks/host-graph` | a build program runs as an ok image |
 | `checks/snapshot` | a C++ program starts from a snapshot of its initialisers, and a start whose named value differs does not |
+| family release | the group's members are tagged and mirrored, both mcpp releases resolve an image of it, and a patch removes no symbol |
 
 ## License
 
