@@ -33,6 +33,12 @@ on:
 permissions:
   contents: read
 
+# `bash -eo pipefail`, not the default `bash -e`: a check piped into `tee` fails
+# its step when the check fails.
+defaults:
+  run:
+    shell: bash
+
 env:
   MCPP_PREVIOUS: 2026.11.5.1
   MCPP_SOURCE_REF: ${{ github.event.inputs.mcpp_ref || vars.MCPP_SOURCE_REF || '' }}

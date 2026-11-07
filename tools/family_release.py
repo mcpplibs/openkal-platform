@@ -17,7 +17,11 @@ mcpp-index it is given.
                      release notes
   exports OLD NEW    builds one image with the platform at OLD and at NEW and
                      compares the global symbols of the C library and the C++
-                     run-time objects it links: a patch version removes none
+                     run-time objects it links: a patch version removes none.
+                     A function of libc++ marked _LIBCPP_HIDE_FROM_ABI carries
+                     its ODR-signature ABI tag (`B9fqe220108`); it is inline,
+                     every object that calls it holds its own copy, and it is
+                     not compared
 
 Network reads use GITHUB_TOKEN when it is set.
 """
@@ -42,6 +46,8 @@ REPOSITORY = {"openkal-ld": "openkal-image", "openkal-run": "openkal-image",
 INDEX_RAW = "https://raw.githubusercontent.com/mcpplibs/mcpp-index/main/pkgs/o/{}.lua"
 # The layers whose objects an image links, by the directory mcpp builds them into.
 LAYERS = ("mcpplibs_openkal-musl", "mcpplibs_openkal-llvm-runtime")
+# libc++'s ODR signature as an Itanium ABI tag: the hardening and exceptions letters and _LIBCPP_VERSION.
+HIDDEN_FROM_ABI = re.compile(r"B\d+[a-z]{1,4}\d{6}")
 
 
 def group(also):
@@ -173,7 +179,7 @@ def symbols(mcpp, platform, target, work, nm):
             sys.exit(f"{platform}: the build linked no objects of {layer}")
         out = subprocess.run([nm, "--defined-only", "--extern-only", "--format=just-symbols", *map(str, objects)],
                              check=True, capture_output=True, text=True).stdout
-        found[layer] = {s for s in out.split() if s and not s.endswith(":")}
+        found[layer] = {s for s in out.split() if s and not s.endswith(":") and not HIDDEN_FROM_ABI.search(s)}
     return found
 
 
