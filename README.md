@@ -57,6 +57,12 @@ whole name however long, openkal-llvm-runtime 0.19.1 reads a name beneath a
 Windows volume as absolute, openkal-macos 0.22.1 sizes its confinement rules to
 the grants of each start, and openkal-image 0.5.1 builds okrun over it.
 
+Platform 0.24.2 changes one member: openkal-llvm-runtime 0.19.2 keeps the volume
+of a name it rebuilds part by part (`lexically_normal`, `weakly_canonical`, and
+`D:/a` / `/b`), which 0.19.1 lost on Windows, so that a launcher over the hosted
+arrangement could not start its runner (openkal-llvm-runtime#68). It is the first
+group released as a leaf and a patch of this group, through one index change.
+
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
 another platform, or none, with `platform = "..."` or `--platform`.
@@ -162,7 +168,7 @@ group is released as one index change:
 python3 tools/family_release.py check            # tags, GitCode mirrors, the index
 python3 tools/family_release.py defects          # open issues, for the release notes
 python3 tools/family_release.py index ../mcpp-index   # the group's one index change
-python3 tools/family_release.py exports openkal-platform@0.24.0 openkal-platform@0.24.1
+python3 tools/family_release.py exports openkal-platform@0.24.1 openkal-platform@0.24.2
 ```
 
 `.github/workflows/family-release.yml` runs them on every change of the group:
