@@ -63,6 +63,12 @@ of a name it rebuilds part by part (`lexically_normal`, `weakly_canonical`, and
 arrangement could not start its runner (openkal-llvm-runtime#68). It is the first
 group released as a leaf and a patch of this group, through one index change.
 
+Platform 0.24.3 changes one member: openkal-image 0.5.2, whose okrun.exe reserves
+8 MiB + 256 KiB for the image's main thread, a thread's stack under
+openkal-windows, where the linker's default was 1 MiB (an image recursing deeply
+on its main thread, clangd.okb with `--sync` over the MSVC headers, overflowed
+it on Windows; openkal-image#32).
+
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
 another platform, or none, with `platform = "..."` or `--platform`.
