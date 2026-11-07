@@ -110,7 +110,12 @@ jobs:
       - name: The candidate index (the published one with the group's change)
         run: |
           git clone --quiet --depth 1 https://github.com/mcpplibs/mcpp-index.git "$RUNNER_TEMP/index"
-          git -C "$RUNNER_TEMP/index" apply "$GITHUB_WORKSPACE/index-change.patch"
+          # Empty once the index lists the group: the published index is then the candidate.
+          if [ -s "$GITHUB_WORKSPACE/index-change.patch" ]; then
+            git -C "$RUNNER_TEMP/index" apply "$GITHUB_WORKSPACE/index-change.patch"
+          else
+            echo "the published index lists the group"
+          fi
           python3 "$RUNNER_TEMP/index/tests/prepare_builtin_index.py" --home "$HOME/.mcpp" --source "$RUNNER_TEMP/index"
       - name: Both mcpp releases resolve and build an image of the group
         run: |
