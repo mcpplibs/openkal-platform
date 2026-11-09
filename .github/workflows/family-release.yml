@@ -40,7 +40,7 @@ defaults:
     shell: bash
 
 env:
-  MCPP_PREVIOUS: 2026.11.5.1
+  MCPP_PREVIOUS: 2026.11.9.1
   MCPP_SOURCE_REF: ${{ github.event.inputs.mcpp_ref || vars.MCPP_SOURCE_REF || '' }}
   XLINGS_VERSION: v2026.10.26.1
   XLINGS_NON_INTERACTIVE: '1'
