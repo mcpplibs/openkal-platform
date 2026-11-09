@@ -75,6 +75,12 @@ extended precision and MXCSR 0x1F80 on x86-64, FPCR zero on AArch64. A thread of
 Windows begins with the x87 at double precision, under which openkal-musl's
 `strtod("0.4")` read `0x1.99999999998p-2` (openkal-image#33).
 
+Platform 0.24.5 changes one member: openkal-image 0.5.4, whose runner states
+its openkal implementation as a capability (`mcpp:kernel-abi=openkal`) with a
+default per system: an implementation the graph already has is the one bound,
+and a system a platform defines needs no patch of openkal-run. The platform
+requires mcpp 2026.11.9.1, which reads `[defaults]`.
+
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
 another platform, or none, with `platform = "..."` or `--platform`.
