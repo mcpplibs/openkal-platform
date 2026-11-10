@@ -81,6 +81,14 @@ default per system: an implementation the graph already has is the one bound,
 and a system a platform defines needs no patch of openkal-run. The platform
 requires mcpp 2026.11.9.1, which reads `[defaults]`.
 
+Platform 0.25.0 is the openkal 0.25 family: openkal 0.25.0 (a second name for a
+file, `kal_fs_hard_link`; the requests to end counted), openkal-linux 0.26.0,
+openkal-macos 0.23.0, openkal-windows 0.21.0, openkal-musl 0.29.0, which finds a
+program by the search rules of the system `kal_env_system` names and implements
+`link` over `kal_fs_hard_link`, openkal-llvm-runtime 0.20.0 above it, and
+openkal-image 0.5.5, built against the same family. The platform requires mcpp
+2026.11.9.1, as 0.24.5 does.
+
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
 another platform, or none, with `platform = "..."` or `--platform`.
