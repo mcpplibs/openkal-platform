@@ -89,6 +89,16 @@ program by the search rules of the system `kal_env_system` names and implements
 openkal-image 0.5.5, built against the same family. The platform requires mcpp
 2026.11.9.1, as 0.24.5 does.
 
+Platform 0.26.0 adds FreeBSD and the interface-bound runner. Its hosted
+arrangement serves `x86_64-freebsd-musl` and `aarch64-freebsd-musl`: openkal-musl
+0.29.2 over openkal-freebsd 0.1.0 in its standalone arrangement, with
+openkal-llvm-runtime 0.20.1 above it, as one static program with no C library of
+the system beneath. openkal-image 0.6.1 binds only the interfaces its
+implementation provides, and its okrun is built for FreeBSD as well, so
+`freebsd-x86_64` and `freebsd-aarch64` are hosts of the runner. The platform
+requires mcpp 2026.11.10.1; mcpp 2026.11.10.2 and later select it for the
+FreeBSD musl rows by default.
+
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
 another platform, or none, with `platform = "..."` or `--platform`.

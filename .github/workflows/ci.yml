@@ -9,6 +9,8 @@ name: CI
 #               and self-contained), one target alone, a single file and an okb
 #   hosted      the machine's own triple takes the platform's hosted arrangement
 #   host-graph  a build program is compiled as an ok image and run by okrun
+#   freebsd     the musl rows of FreeBSD are built here and run in a FreeBSD VM,
+#               with okrun built for them running an ok image there
 #
 # The platform is read by mcpp 2026.10.30.1 and later (SPEC-013, SPEC-015). CI
 # measures with 2026.10.31.3: from 2026.10.31.2 a set's Windows launcher is built
@@ -34,7 +36,7 @@ on:
 
 env:
   MCPP_SOURCE_REF: ${{ github.event.inputs.mcpp_ref || vars.MCPP_SOURCE_REF || '' }}
-  MCPP_VERSION: 2026.11.9.1
+  MCPP_VERSION: 2026.11.10.1
   XLINGS_VERSION: v2026.10.26.1
   XLINGS_NON_INTERACTIVE: '1'
 
@@ -216,3 +218,75 @@ jobs:
         run: |
           mcpp run | tee run.log
           grep -q "host graph ok: 1" run.log || { echo "::error::the build program's definition did not arrive"; exit 1; }
+
+  # FREEBSD (0.26.0): the hosted arrangement's musl rows, openkal-musl over
+  # openkal-freebsd standalone, built here for both architectures as static
+  # programs; the x86_64 one runs in a FreeBSD virtual machine, beside okrun
+  # built for the same row from the openkal-image release this group names,
+  # which runs an ok image there.
+  freebsd:
+    name: freebsd (built for x86_64 and aarch64, run in a VM)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings and mcpp
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
+            | bash -s "$XLINGS_VERSION"
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+          for attempt in 1 2 3 4 5 6; do
+            xlings update > /dev/null 2>&1 || true
+            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
+            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
+            sleep 60
+          done
+          mcpp --version
+          mcpp self config --mirror GLOBAL
+
+      - name: The musl rows, built for FreeBSD
+        working-directory: checks/hosted
+        run: |
+          mkdir -p ../../.fb
+          for a in x86_64 aarch64; do
+            mcpp build --target "$a-freebsd-musl"
+            p=$(find "target/$a-freebsd-musl" -path '*bin/hosted' -type f | head -1)
+            file "$p"
+            file "$p" | grep -q 'FreeBSD' && file "$p" | grep -q 'statically linked' \
+              || { echo "::error::$a-freebsd-musl is not a static FreeBSD program"; exit 1; }
+          done
+          cp "$(find target/x86_64-freebsd-musl -path '*bin/hosted' -type f | head -1)" ../../.fb/hosted
+
+      - name: okrun for FreeBSD, and an ok image
+        run: |
+          (cd checks/image && mcpp build --target x86_64-openkal)
+          cp "$(find checks/image/target -path '*x86_64-openkal*' -path '*bin*' -name image.oke -type f | head -1)" .fb/image.oke
+          tag=$(sed -n 's/^openkal-tools *= *"\(.*\)"/\1/p' mcpp.toml | head -1)
+          git clone --quiet --depth 1 --branch "$tag" https://github.com/mcpplibs/openkal-image.git "$RUNNER_TEMP/oi"
+          printf '\n[target.x86_64-freebsd-musl]\nplatform = { path = "%s" }\ntoolchain = "llvm@23.1.3"\n' "$GITHUB_WORKSPACE" >> "$RUNNER_TEMP/oi/tools/mcpp.toml"
+          (cd "$RUNNER_TEMP/oi/tools" && mcpp build --release --target x86_64-freebsd-musl)
+          cp "$(find "$RUNNER_TEMP/oi/target/x86_64-freebsd-musl" -path '*bin/openkal-tools/okrun' -type f | head -1)" .fb/okrun
+          file .fb/okrun
+
+      - name: Run in FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          run: |
+            set -e
+            uname -a
+            ./.fb/hosted one two > .fb/hosted.log 2>&1 || echo "status $?" >> .fb/hosted.log
+            ./.fb/okrun ./.fb/image.oke one two > .fb/image.log 2>&1 || echo "status $?" >> .fb/image.log
+            cat .fb/hosted.log .fb/image.log
+
+      - name: The verdict
+        run: |
+          grep -q "hosted ok: hosted" .fb/hosted.log && grep -q "hosted args: 3 two" .fb/hosted.log \
+            || { echo "::error::the FreeBSD musl program's output"; cat .fb/hosted.log; exit 1; }
+          grep -q "image ok: 3 args" .fb/image.log \
+            || { echo "::error::the ok image under okrun on FreeBSD"; cat .fb/image.log; exit 1; }
