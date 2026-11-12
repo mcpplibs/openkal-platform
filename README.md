@@ -99,6 +99,14 @@ implementation provides, and its okrun is built for FreeBSD as well, so
 requires mcpp 2026.11.10.1; mcpp 2026.11.10.2 and later select it for the
 FreeBSD musl rows by default.
 
+Platform 0.27.0 states the identity its runner is built as on FreeBSD
+(`runner.built-as`): `x86_64-freebsd-musl` and `aarch64-freebsd-musl`. mcpp
+2026.11.12.1 reads the statement, and a package that carries its runner for
+every system (`mcpp pack --mode self-contained --systems all`) carries
+FreeBSD's; before, which identity a system's runner is was a table of the
+engine. The version group is that of 0.26.0. An mcpp earlier than 2026.11.12.1
+names the key it does not read and ignores it.
+
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
 another platform, or none, with `platform = "..."` or `--platform`.
