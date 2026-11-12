@@ -109,14 +109,14 @@ names the key it does not read and ignores it.
 
 Platform 0.27.1 is a patch of the group. The implementations retire a handle
 before closing it: openkal-linux 0.26.1, openkal-macos 0.23.1 and
-openkal-windows 0.22.1. A connection, a listener and a datagram socket were
+openkal-windows 0.21.1. A connection, a listener and a datagram socket were
 closed first, so a file another thread opened at that moment was left with a
 stale handle, and above openkal-musl its reads and writes reached descriptor 0
-(openkal-linux#53). openkal-windows 0.22 also gives a node one identity however
-it was reached. openkal-musl 0.29.3 delivers the byte a `poll` held together
+(openkal-linux#53). openkal-musl 0.29.4 delivers the byte a `poll` held together
 with what else has arrived from `recv`, `recvfrom` and `recvmsg`, as `read`
 does; before, a program that polls before each `recv` took a stream one byte
-per call (openkal-musl#52). The platform's statements are those of 0.27.0.
+per call (openkal-musl#52). The group stays on openkal-windows 0.21, the line
+openkal-run and mcpplibs.os name. The platform's statements are those of 0.27.0.
 
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
