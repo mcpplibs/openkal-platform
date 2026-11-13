@@ -134,8 +134,10 @@ checks, places, loads and debugs it). Its conventions are the ok images' own,
 and three apply to every architecture or to i386 alone:
 - `-z rela`: an image states its addends, which is i386's one difference from
   its linker's default.
-- `-march=i586`: the Pentium's instructions, the least machine an i386 image
-  runs on and the one DOS's emulators model.
+- `-march=i486`: the 486's instructions, the least machine an i386 image runs
+  on. DOSBox Staging 0.83, which runs the DOS row and its carrier, executes
+  RDTSC and not CMPXCHG8B under every `cputype` (measured), so a sixty-four bit
+  atomic is compiler-rt's call rather than the Pentium's instruction.
 - `-mstack-alignment=16`: the System V i386 convention's sixteen bytes at a call
   (SPEC 12.2). The image's triple names no system, and for such a triple clang
   keeps four. Measured: okrun's own code, built for Linux, faulted on a `movaps`
@@ -153,7 +155,13 @@ toolchain = "llvm@23.1.3"
 
 Measured: a C++23 image with `import std` and an exception across a frame,
 built so, runs under an okrun built for `i686-linux-musl` on x86_64 Linux and
-returns its status.
+returns its status, unoptimised and optimised.
+
+The same image runs on DOS (technical experiment only): the runner's `hosts`
+include `dos-i686`, so `mcpp pack --pkg-format single-file --systems dos-i686`
+builds openkal-run's core runner as a program of the DOS row below, with the
+image in its `.oke` section. Measured under DOSBox Staging: the image sorted its
+arguments, caught its exception, read DOS's `PATH` and returned 7.
 
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
@@ -294,11 +302,12 @@ The row is TECHNICAL EXPERIMENT ONLY (openkal-dos's README). A program is the
 stub of openkal-dos followed by an ELF32 i386 executable linked at its address;
 the seal `okdos` (openkal-dos-tools) writes the stub, and the stub enters 32-bit
 protected mode through the machine's DPMI host or CWSDPMI beside the program. The
-row's flags are its conventions: `-march=i586`, emulated thread-local storage
+row's flags are its conventions: `-march=i486`, emulated thread-local storage
 (there is no thread register the toolchain can address), unwind tables for
 every unit, and the stack aligned to sixteen bytes at a call, as an i386 ok
-image's is (the row's code calls images and is called by them). The provider's link is `ld.lld -static --image-base=0x1000 -z norelro
---gc-sections --eh-frame-hdr`, entered at `okdos_entry`, over `base = "none"`, and
+image's is (the row's code calls images and is called by them). The provider's
+link is `ld.lld -static --image-base=0x1000 -z norelro --gc-sections
+--eh-frame-hdr`, entered at `okdos_entry`, over `base = "none"`, and
 the platform's tools it carries are the one its seal names (mcpp 2026.11.13.1):
 a DOS build builds `okdos` alone, and an ok image does not build it. `mcpp run`
 runs the program with dirun and xim's DOSBox Staging profile, which places

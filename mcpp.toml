@@ -45,7 +45,10 @@ toolchain = "llvm@23.1.3"
 # static program, the same whichever machine packs it. `uefi-x86_64` (0.28.0):
 # the runner is a UEFI application of the row this platform defines below (the
 # core runner, which carries what it runs), so an ok image packs for firmware.
-runner    = { cmd = ["okrun", "{}"], host = "same-arch", hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64", "freebsd-x86_64", "freebsd-aarch64", "uefi-x86_64"], built-as = { "freebsd-x86_64" = "x86_64-freebsd-musl", "freebsd-aarch64" = "aarch64-freebsd-musl" } }
+# `dos-i686` (0.28.0; technical experiment only): the core runner as a program
+# of the DOS row below, so an i386 image packs for DOS (mcpp 2026.11.13.1 builds
+# a system's runner as the row the platform defines for it).
+runner    = { cmd = ["okrun", "{}"], host = "same-arch", hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64", "freebsd-x86_64", "freebsd-aarch64", "uefi-x86_64", "dos-i686"], built-as = { "freebsd-x86_64" = "x86_64-freebsd-musl", "freebsd-aarch64" = "aarch64-freebsd-musl" } }
 # `mcpp pack --mode self-contained`: a program of the packing machine that
 # carries the image in a section and runs it through libokrun (M3).
 carrier   = { package = "openkal-run@0.6.3", section = ".oke", main = "carrier/main.cpp" }
@@ -142,18 +145,21 @@ cflags   = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=pac-ret+
 cxxflags = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=pac-ret+bti"]
 asmflags = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=pac-ret+bti"]
 
-# i386 (0.28.0): the Pentium's instructions (-march=i586) are the least machine
-# an i386 image runs on, and the emulators that run DOS model no later one (no
-# CMOV, no SSE); an image is then the same bytes on Linux, on Windows and beneath
-# DOS's carrier. The floating point is the x87's, the convention's own (SPEC 12.2).
+# i386 (0.28.0): the 486's instructions (-march=i486) are the least machine an
+# i386 image runs on: DOSBox Staging 0.83, which runs the DOS row and its
+# carrier, executes RDTSC and not CMPXCHG8B under every `cputype' (measured), so
+# a sixty-four bit atomic is compiler-rt's call (atomic.c) rather than the
+# Pentium's instruction. An image is then the same bytes on Linux, on Windows and
+# beneath DOS's carrier. The floating point is the x87's, the convention's own
+# (SPEC 12.2).
 # The stack is aligned to sixteen bytes at a call (SPEC 12.2): the image's triple
 # names no system, for which clang keeps four, and a loader's code built for its
 # system relies on sixteen (measured: `movaps' of okrun's kal_time_monotonic,
 # entered from an image built at four, faults).
 [platform.build.'cfg(arch = "i686")']
-cflags   = ["-march=i586", "-mstack-alignment=16"]
-cxxflags = ["-march=i586", "-mstack-alignment=16"]
-asmflags = ["-march=i586"]
+cflags   = ["-march=i486", "-mstack-alignment=16"]
+cxxflags = ["-march=i486", "-mstack-alignment=16"]
+asmflags = ["-march=i486"]
 
 # The link, by `ld.lld` itself: position-independent, every loadable segment
 # aligned to 64 KiB (the largest protection granularity among the systems),
@@ -254,7 +260,8 @@ runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:ovmf}/dirun.tom
 # need. The stack is aligned to sixteen bytes at a call, the System V i386
 # convention that openkal states for an i386 image (SPEC 12.2) and that a triple
 # with no system leaves at four: the row's code calls images and is called by
-# them. The runner is dirun with DOSBox Staging and CWSDPMI beside the program
+# them. The processor is the 486, as for the i386 ok image (DOSBox Staging 0.83
+# executes no CMPXCHG8B, measured). The runner is dirun with DOSBox Staging and CWSDPMI beside the program
 # (xim's `dosbox-staging'). The memory allocator is musl's own (`malloc-mallocng'):
 # it asks openkal.memory for blocks and nothing else.
 [[platform.define]]
@@ -265,7 +272,7 @@ data-model    = "ilp32"
 exe-suffix    = ".exe"
 execution     = "dos"
 tier          = "preview"
-march         = "i586"
+march         = "i486"
 flags         = ["-femulated-tls", "-fasynchronous-unwind-tables", "-mstack-alignment=16", "-ffunction-sections", "-fdata-sections"]
 
 [[platform.provider]]
