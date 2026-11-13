@@ -1,0 +1,12 @@
+# A DOS program (0.28.0; technical experiment only): C++23 over the family's C library and C++
+# run-time over openkal-dos, run with dirun under DOSBox Staging. The platform is the directory above.
+[package]
+name    = "dos"
+version = "0.1.0"
+
+[targets.dos]
+kind = "bin"
+main = "src/main.cpp"
+
+[target.i686-dos-musl]
+platform = { path = "../.." }

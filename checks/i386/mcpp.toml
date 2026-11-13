@@ -1,0 +1,15 @@
+# The ok image of i386 (0.28.0): C++23 over the family's C library and C++ run-time, built for
+# i686-openkal and run by an okrun built for i686-linux-musl, and carried as a DOS program by the
+# core runner (`mcpp pack --pkg-format single-file --systems dos-i686`). The platform is the
+# directory above; the row is planned in mcpp until its pin serves it, so the toolchain is named.
+[package]
+name    = "i386"
+version = "0.1.0"
+
+[targets.i386]
+kind = "bin"
+main = "src/main.cpp"
+
+[target.i686-openkal]
+platform  = { path = "../.." }
+toolchain = "llvm@23.1.3"

@@ -353,6 +353,8 @@ previous patch's.
 | `checks/hosted` | the hosted arrangement runs on Linux, macOS and Windows |
 | `checks/host-graph` | a build program runs as an ok image |
 | `checks/snapshot` | a C++ program starts from a snapshot of its initialisers, and a start whose named value differs does not |
+| `checks/i386` | an ok image of i386 is built in both modes, checked by okld and run by okrun built for i686-linux-musl; packed with `--systems dos-i686`, it runs as a DOS program |
+| `checks/dos` | a program of i686-dos-musl runs in both modes under DOSBox Staging (technical experiment only) |
 | family release | the group's members are tagged and mirrored, both mcpp releases resolve an image of it, and a patch removes no symbol |
 
 ## License
