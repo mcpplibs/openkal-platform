@@ -27,10 +27,10 @@ mcpp pack --target x86_64-openkal --pkg-format okb        # one file okrun runs 
 
 | Group | Value |
 |---|---|
-| targets | `x86_64-openkal`, `aarch64-openkal` |
+| targets | `x86_64-openkal`, `aarch64-openkal`, `i686-openkal` (0.28.0) |
 | toolchain | `llvm@23.1.3` |
 | layers | `c-abi` openkal-musl (`posix`), `c++-abi` and `compiler-runtime` openkal-llvm-runtime |
-| tools | `okld`, `okrun`, `okprof` (openkal-tools) |
+| tools | `okld`, `okrun`, `okprof` (openkal-tools); `okdos` (openkal-dos-tools), the seal of the DOS row (0.28.0) |
 | build | `-fPIC -femulated-tls -fvisibility=hidden -fasynchronous-unwind-tables`, stack-clash protection, `-ffunction-sections -fdata-sections`; frame pointers, `-fstack-protector-strong -mstack-protector-guard=global`, `-ftrivial-auto-var-init=zero`, libc++'s fast hardening (0.23.0); on x86_64 `-fcf-protection=full`; on aarch64 `-ffixed-x18 -mno-outline-atomics -mbranch-protection=pac-ret+bti` (not `standard`, which clang 23 counts the guarded control stack in) |
 | link | `ld.lld`, entry `ok_main`, 64 KiB pages, relative relocations packed, `--gc-sections --icf=safe`, `--build-id=sha1`, retained debug relocations (0.24.0), the image notes produced by `okld note-source` |
 | seal | the selected LLVM toolchain's `llvm-objcopy` prunes ordinary static relocations (0.24.0); `okld note`; `okld place`, the writable segments computed for the base the image's bytes choose (openkal 0.23); then `okld check --with` the shared images the program needs |
@@ -117,6 +117,51 @@ with what else has arrived from `recv`, `recvfrom` and `recvmsg`, as `read`
 does; before, a program that polls before each `recv` took a stream one byte
 per call (openkal-musl#52). The group stays on openkal-windows 0.21, the line
 openkal-run and mcpplibs.os name. The platform's statements are those of 0.27.0.
+
+Platform 0.28.0 adds Linux's thirty-two bit row, `i686-linux-musl`, to the hosted
+arrangement (openkal 0.25.1, clause 5.5): openkal-musl 0.29.5 over openkal-linux
+0.26.3's i386 system-call layer, with openkal-llvm-runtime 0.20.2 above it. A
+Linux x86_64 machine runs its programs itself; CI builds and runs a hosted
+program there and the specification's conformance suite through the platform.
+The group follows openkal 0.25.1, and its implementations declare the
+specification by its minor version (openkal-macos 0.23.2, openkal-windows 0.21.2,
+openkal-freebsd 0.1.2; openkal-image 0.6.2), so a project that names openkal
+0.25.1 resolves with them.
+
+Platform 0.28.0 also serves the ok image of the thirty-two bit class,
+`i686-openkal` (openkal 0.25.1, clauses 5.5 and 12.2; openkal-image 0.6.3 reads,
+checks, places, loads and debugs it). Its conventions are the ok images' own,
+and three apply to every architecture or to i386 alone:
+- `-z rela`: an image states its addends, which is i386's one difference from
+  its linker's default.
+- `-march=i486`: the 486's instructions, the least machine an i386 image runs
+  on. DOSBox Staging 0.83, which runs the DOS row and its carrier, executes
+  RDTSC and not CMPXCHG8B under every `cputype` (measured), so a sixty-four bit
+  atomic is compiler-rt's call rather than the Pentium's instruction.
+- `-mstack-alignment=16`: the System V i386 convention's sixteen bytes at a call
+  (SPEC 12.2). The image's triple names no system, and for such a triple clang
+  keeps four. Measured: okrun's own code, built for Linux, faulted on a `movaps`
+  when an image built at four called it.
+
+An i386 image runs on an i386 runner (`i686-linux-musl` on Linux), never inside
+a runner of another architecture. mcpp names the row `planned` until its pin of
+this platform serves it, so a project opts in with the toolchain:
+
+```toml
+[target.i686-openkal]
+platform  = "openkal-platform@0.28.0"
+toolchain = "llvm@23.1.3"
+```
+
+Measured: a C++23 image with `import std` and an exception across a frame,
+built so, runs under an okrun built for `i686-linux-musl` on x86_64 Linux and
+returns its status, unoptimised and optimised.
+
+The same image runs on DOS (technical experiment only): the runner's `hosts`
+include `dos-i686`, so `mcpp pack --pkg-format single-file --systems dos-i686`
+builds openkal-run's core runner as a program of the DOS row below, with the
+image in its `.oke` section. Measured under DOSBox Staging: the image sorted its
+arguments, caught its exception, read DOS's `PATH` and returned 7.
 
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
@@ -207,6 +252,73 @@ own openkal implementation (`checks/hosted`). `[host] platform` selects it for
 the host graph: build programs are then compiled as ok images of the machine's
 architecture and run by okrun (`checks/host-graph`).
 
+## UEFI applications (0.28.0)
+
+`x86_64-uefi` is a row this platform defines and serves (`[[platform.define]]`,
+`[[platform.provider]] name = "uefi"`): an application the firmware loads, on
+the same C library and C++ run-time over openkal-uefi, so it is written in C++23
+with `import std`:
+
+```toml
+[target.x86_64-uefi]
+platform = "openkal-platform@0.28.0"
+```
+
+The row is PE. mcpp 2026.11.13.1 realises the C environment by the container, as
+for Windows, and ld.lld's MinGW driver (`link-emulation = "i386pep"`) links an
+EFI application entered at `efi_main`. The provider states the row's own link,
+layers and runner over `base = "none"`, so none of the ok images' conventions
+reach it: `mcpp run` boots the application with dirun, xim's OVMF and its
+profile (`{pkg:ovmf}/dirun.toml`) and QEMU, and `board/qemu-exit.S` returns the
+status through QEMU's debug-exit port. A program that wants no C library states
+`c-abi = false` for the row. Measured: `std::println` and `std::ranges::sort`, a
+1.2 MB application, printed and returned 42 under OVMF in 0.8 s. The row and its
+runner were openkal-uefi-platform 0.1.0, which is folded here and into
+openkal-uefi's example.
+
+An ok image runs on firmware as it runs on the other systems: the runner's
+`hosts` include `uefi-x86_64`, so `mcpp pack --pkg-format single-file --systems
+uefi-x86_64` builds the carrier for the row and places the image in its `.oke`
+section, and the core runner (openkal-image 0.6.3) places the image through
+`openkal.exec`. The board makes standard error the console (OVMF's `StdErr`
+reaches no serial reader), and the machine has 2 GiB: memory is backed when the
+allocator reserves it, and the carrier's allocator and the image's each place a
+32 MiB arena at a 256 MiB alignment (openkal-musl 0.29.6, openkal-uefi 0.10.0).
+Measured: an image that prints, writes to standard error, throws and catches,
+carried by a 2.4 MB application, returned its status 7 under OVMF in 0.4 s.
+
+## DOS programs (0.28.0; technical experiment only)
+
+`i686-dos-musl` is a row this platform defines and serves (`[[platform.provider]]
+name = "dos"`): a program a DPMI host runs, on the same C library and C++
+run-time over openkal-dos, so it is written in C++23 with `import std`:
+
+```toml
+[target.i686-dos-musl]
+platform = "openkal-platform@0.28.0"
+```
+
+The row is TECHNICAL EXPERIMENT ONLY (openkal-dos's README). A program is the
+stub of openkal-dos followed by an ELF32 i386 executable linked at its address;
+the seal `okdos` (openkal-dos-tools) writes the stub, and the stub enters 32-bit
+protected mode through the machine's DPMI host or CWSDPMI beside the program. The
+row's flags are its conventions: `-march=i486`, emulated thread-local storage
+(there is no thread register the toolchain can address), unwind tables for
+every unit, and the stack aligned to sixteen bytes at a call, as an i386 ok
+image's is (the row's code calls images and is called by them). The provider's
+link is `ld.lld -static --image-base=0x1000 -z norelro --gc-sections
+--eh-frame-hdr`, entered at `okdos_entry`, over `base = "none"`, and
+the platform's tools it carries are the one its seal names (mcpp 2026.11.13.1):
+a DOS build builds `okdos` alone, and an ok image does not build it. `mcpp run`
+runs the program with dirun and xim's DOSBox Staging profile, which places
+CWSDPMI beside it. Measured: a C++23 program with `import std`, an exception
+crossing a frame, `std::ranges::sort`, a sleep and `getenv` printed and returned
+7 under DOSBox Staging. Through openkal-dos's `fs`, `std::filesystem` and
+`std::fstream` work on the FAT volumes: a program wrote, appended, read, renamed,
+listed, resized and removed files and directories there (measured). openkal-dos
+provides `abort`, `env`, `exec`, `fs`, `memory`, `stream`, `terminal` and
+`time`. `region` is absent, because the DPMI host CWSDPMI is DPMI 0.90.
+
 ## Version group
 
 `[platform.versions]` names one version of each package of the family. From
@@ -241,6 +353,8 @@ previous patch's.
 | `checks/hosted` | the hosted arrangement runs on Linux, macOS and Windows |
 | `checks/host-graph` | a build program runs as an ok image |
 | `checks/snapshot` | a C++ program starts from a snapshot of its initialisers, and a start whose named value differs does not |
+| `checks/i386` | an ok image of i386 is built in both modes, checked by okld and run by okrun built for i686-linux-musl; packed with `--systems dos-i686`, it runs as a DOS program |
+| `checks/dos` | a program of i686-dos-musl runs in both modes under DOSBox Staging (technical experiment only) |
 | family release | the group's members are tagged and mirrored, both mcpp releases resolve an image of it, and a patch removes no symbol |
 
 ## License

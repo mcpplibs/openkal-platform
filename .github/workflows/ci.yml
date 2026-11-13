@@ -9,6 +9,11 @@ name: CI
 #               and self-contained), one target alone, a single file and an okb
 #   hosted      the machine's own triple takes the platform's hosted arrangement
 #   host-graph  a build program is compiled as an ok image and run by okrun
+#   i686        Linux's thirty-two bit row: the hosted program and the
+#               specification's conformance suite, run on Linux x86_64
+#   i686-openkal  the ok image of i386, run by okrun built for i686-linux-musl
+#   dos         a DOS program, and the i386 image carried as one (technical
+#               experiment only), run under DOSBox Staging through dirun
 #   freebsd     the musl rows of FreeBSD are built here and run in a FreeBSD VM,
 #               with okrun built for them running an ok image there
 #
@@ -36,7 +41,7 @@ on:
 
 env:
   MCPP_SOURCE_REF: ${{ github.event.inputs.mcpp_ref || vars.MCPP_SOURCE_REF || '' }}
-  MCPP_VERSION: 2026.11.10.1
+  MCPP_VERSION: 2026.11.13.1
   XLINGS_VERSION: v2026.10.26.1
   XLINGS_NON_INTERACTIVE: '1'
 
@@ -224,6 +229,226 @@ jobs:
   # programs; the x86_64 one runs in a FreeBSD virtual machine, beside okrun
   # built for the same row from the openkal-image release this group names,
   # which runs an ok image there.
+  # I686 (0.28.0): Linux's thirty-two bit row, which a Linux x86_64 machine runs
+  # itself: the hosted program, and the specification's conformance suite through
+  # the platform, over the implementation at the group's version.
+  i686:
+    name: i686-linux-musl (built and run on Linux x86_64)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings and mcpp
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
+            | bash -s "$XLINGS_VERSION"
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+          for attempt in 1 2 3 4 5 6; do
+            xlings update > /dev/null 2>&1 || true
+            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
+            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
+            sleep 60
+          done
+          mcpp --version
+          mcpp self config --mirror GLOBAL
+
+      - name: The hosted program, thirty-two bit
+        working-directory: checks/hosted
+        run: |
+          mcpp run --target i686-linux-musl -- one two | tee run.log
+          grep -q "hosted ok: hosted" run.log || { echo "::error::the hosted program's output"; exit 1; }
+          grep -q "hosted args: 3 two" run.log || { echo "::error::the hosted program's arguments"; exit 1; }
+          p=$(find target/i686-linux-musl -path '*bin/hosted' -type f | head -1)
+          file "$p"
+          file "$p" | grep -q 'ELF 32-bit' && file "$p" | grep -q 'Intel 80386' && file "$p" | grep -q 'statically linked' \
+            || { echo "::error::i686-linux-musl is not a static i386 program"; exit 1; }
+
+      - name: The specification's conformance suite
+        run: |
+          set -euo pipefail
+          spec=$(sed -n 's/^openkal *= *"\(.*\)"/\1/p' mcpp.toml | head -1)
+          impl=$(sed -n 's/^openkal-linux *= *"\(.*\)"/\1/p' mcpp.toml | head -1)
+          git clone --quiet --depth 1 --branch "$spec" https://github.com/mcpplibs/openkal.git .spec
+          git clone --quiet --depth 1 --branch "$impl" https://github.com/mcpplibs/openkal-linux.git .impl
+          # The toolchain is named, as checks/hosted names it: an mcpp that
+          # registers the row as planned takes it when the toolchain is named.
+          bash .spec/tools/run-conformance.sh openkal-linux .impl full,optional \
+            --target i686-linux-musl --platform "path:$GITHUB_WORKSPACE" --toolchain llvm@23.1.3 | tee conformance.log
+          grep -qE '^observations: [0-9]+ held, 0 did not hold' conformance.log \
+            || { echo "::error::an observation did not hold on i686-linux-musl"; exit 1; }
+
+  uefi:
+    name: x86_64-uefi (built on Linux x86_64, run under OVMF)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings and mcpp
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
+            | bash -s "$XLINGS_VERSION"
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+          for attempt in 1 2 3 4 5 6; do
+            xlings update > /dev/null 2>&1 || true
+            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
+            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
+            sleep 60
+          done
+          mcpp --version
+          mcpp self config --mirror GLOBAL
+
+      # The provider's runner: dirun, xim's OVMF with its profile, and QEMU, installed by the
+      # first run; the status returns through the board's exit.
+      - name: The application, built and booted
+        working-directory: checks/uefi
+        run: |
+          set +e
+          mcpp run --release --target x86_64-uefi | tee run.log
+          status=${PIPESTATUS[0]}
+          set -e
+          grep -q "uefi ok: \[1, 2, 3\] 1" run.log || { echo "::error::the application's output"; exit 1; }
+          [ "$status" -eq 42 ] || { echo "::error::the application returned $status, not 42"; exit 1; }
+          p=$(find target/x86_64-uefi -path '*bin/uefi.efi' -type f | head -1)
+          file "$p"
+          file "$p" | grep -q 'PE32+' && file "$p" | grep -q 'EFI application' \
+            || { echo "::error::x86_64-uefi is not a PE32+ EFI application"; exit 1; }
+
+  # I686-OPENKAL (0.28.0): the ok image of i386 (ELF32, REL), built from
+  # checks/i386 in both modes, checked by okld, and run by okrun built for
+  # i686-linux-musl from the openkal-image release this group names.
+  i686-openkal:
+    name: i686-openkal (an ok image of i386, run on Linux x86_64)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings and mcpp
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
+            | bash -s "$XLINGS_VERSION"
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+          for attempt in 1 2 3 4 5 6; do
+            xlings update > /dev/null 2>&1 || true
+            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
+            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
+            sleep 60
+          done
+          mcpp --version
+          mcpp self config --mirror GLOBAL
+
+      - name: okrun for i686-linux-musl
+        run: |
+          tag=$(sed -n 's/^openkal-tools *= *"\(.*\)"/\1/p' mcpp.toml | head -1)
+          git clone --quiet --depth 1 --branch "$tag" https://github.com/mcpplibs/openkal-image.git "$RUNNER_TEMP/oi"
+          printf '\n[target.i686-linux-musl]\nplatform = { path = "%s" }\ntoolchain = "llvm@23.1.3"\n' "$GITHUB_WORKSPACE" >> "$RUNNER_TEMP/oi/tools/mcpp.toml"
+          (cd "$RUNNER_TEMP/oi/tools" && mcpp build --release --target i686-linux-musl)
+          okrun=$(find "$RUNNER_TEMP/oi/target/i686-linux-musl" -path '*bin/openkal-tools/okrun' -type f | head -1)
+          file "$okrun"
+          file "$okrun" | grep -q 'ELF 32-bit' || { echo "::error::okrun is not an i386 program"; exit 1; }
+          echo "OKRUN32=$okrun" >> "$GITHUB_ENV"
+
+      - name: The image, built, checked and run (dev and release)
+        working-directory: checks/i386
+        run: |
+          py=python3
+          for mode in "" --release; do
+            rm -rf target/i686-openkal
+            mcpp build --target i686-openkal $mode
+            okld=$(mcpp self env --target i686-openkal --format json | $py -c 'import json,sys; print(json.load(sys.stdin)["data"]["tools"]["okld"])')
+            image=$(find target/i686-openkal -path '*bin*' -name i386.oke -type f | head -1)
+            "$okld" check "$image"
+            "$okld" inspect "$image" | tee inspect.log
+            grep -Eq '^architecture +i686' inspect.log || { echo "::error::the image does not state i686"; exit 1; }
+            set +e
+            "$OKRUN32" "$image" two one | tee run.log
+            status=${PIPESTATUS[0]}
+            set -e
+            grep -q 'i386 ok: \["one", "two"\]' run.log && grep -q 'caught: across a frame' run.log \
+              || { echo "::error::the image's output ($mode)"; exit 1; }
+            [ "$status" -eq 7 ] || { echo "::error::the image returned $status, not 7 ($mode)"; exit 1; }
+          done
+
+  # DOS (0.28.0; technical experiment only): a program of i686-dos-musl
+  # (openkal-musl over openkal-dos, run under CWSDPMI) built in both modes and
+  # run by the provider's runner, dirun with DOSBox Staging; and the i386 ok
+  # image packed as one DOS program, the core runner carrying it, and run there.
+  dos:
+    name: i686-dos-musl (built on Linux x86_64, run under DOSBox Staging)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings and mcpp
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
+            | bash -s "$XLINGS_VERSION"
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+          for attempt in 1 2 3 4 5 6; do
+            xlings update > /dev/null 2>&1 || true
+            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
+            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
+            sleep 60
+          done
+          mcpp --version
+          mcpp self config --mirror GLOBAL
+
+      - name: The DOS program (dev and release)
+        working-directory: checks/dos
+        run: |
+          for mode in "" --release; do
+            set +e
+            mcpp run --target i686-dos-musl $mode -- two one | tr -d '\r' | tee run.log
+            status=${PIPESTATUS[0]}
+            set -e
+            grep -q 'dos ok: \["one", "two"\]' run.log && grep -q 'caught: across a frame' run.log \
+              || { echo "::error::the DOS program's output ($mode)"; exit 1; }
+            [ "$status" -eq 7 ] || { echo "::error::the DOS program returned $status, not 7 ($mode)"; exit 1; }
+          done
+          p=$(find target/i686-dos-musl -path '*bin/dos.exe' -type f | head -1)
+          file "$p"
+
+      - name: The i386 image carried as a DOS program
+        working-directory: checks/i386
+        run: |
+          # `-o` names the file as written; DOS runs a program named .exe.
+          mcpp pack --target i686-openkal --pkg-format single-file --systems dos-i686 -o carried.exe
+          exe=target/dist/carried.exe
+          [ -f "$exe" ] || { echo "::error::no DOS program was packed"; ls target/dist; exit 1; }
+          file "$exe"
+          # The DOS row's runner, which the previous step installed: dirun, and
+          # the profile of the DOSBox Staging package beside it.
+          dirun=$(cd ../dos && mcpp self env --target i686-dos-musl --format json \
+                  | python3 -c 'import json,sys; print(json.load(sys.stdin)["data"]["runner"]["program"])')
+          root=$(cd "$(dirname "$dirun")/../../.." && pwd)
+          profile=$(find "$root"/xim-x-dosbox-staging -name dirun.toml -type f | sort | tail -1)
+          [ -n "$dirun" ] && [ -n "$profile" ] || { echo "::error::dirun or the DOSBox profile is not installed"; exit 1; }
+          set +e
+          "$dirun" --payload "$exe" --profile "$profile" -- two one | tr -d '\r' | tee carried.log
+          status=${PIPESTATUS[0]}
+          set -e
+          grep -q 'i386 ok: \["one", "two"\]' carried.log || { echo "::error::the carried image's output"; exit 1; }
+          [ "$status" -eq 7 ] || { echo "::error::the carried image returned $status, not 7"; exit 1; }
+
   freebsd:
     name: freebsd (built for x86_64 and aarch64, run in a VM)
     runs-on: ubuntu-24.04

@@ -12,7 +12,7 @@
 [package]
 namespace   = "mcpplibs"
 name        = "openkal-platform"
-version     = "0.27.1"
+version     = "0.28.0"
 description = "The platform of ok images (<arch>-openkal): their toolchain, C library and C++ run-time, tools, compile and link conventions, seal, runner and carrier, as one versioned statement mcpp reads."
 license     = "Apache-2.0"
 authors     = ["mcpplibs"]
@@ -21,10 +21,17 @@ repo        = "https://github.com/mcpplibs/openkal-platform"
 # implementation provides (MCPP_KERNEL_ABI_INTERFACES), and FreeBSD's rows are
 # built-in. 2026.11.9.1: openkal-run (from 0.5.4) states its openkal implementation as a
 # capability with a default per system (`[defaults]`).
-mcpp        = ">=2026.11.10.1"
+# 2026.11.13.1: the UEFI row (the PE rows' C environment by the container, a
+# provider's link and runner over `base = "none"', a row's link emulation
+# without its machine), and `--toolchain' opts the planned i686 row in.
+mcpp        = ">=2026.11.13.1"
 
 [platform]
-targets   = ["x86_64-openkal", "aarch64-openkal"]
+# `i686-openkal` (0.28.0): the image of the thirty-two bit class, i386 (openkal
+# 0.25.1, clauses 5.5 and 12.2; openkal-image 0.6.3 reads, checks and loads it).
+# mcpp names the row `planned' until its pin of this platform serves it: a
+# project selects it with this platform and `--toolchain llvm@23.1.3`.
+targets   = ["x86_64-openkal", "aarch64-openkal", "i686-openkal"]
 toolchain = "llvm@23.1.3"
 # The loader runs an image of its own architecture on Linux, macOS and Windows;
 # `hosts` are the systems and architectures openkal-tools builds it for, which is
@@ -35,11 +42,16 @@ toolchain = "llvm@23.1.3"
 # as, where the engine holds no convention for the system. A package that
 # carries its runner (`mcpp pack --mode self-contained --systems all`) builds
 # FreeBSD's as the musl identity this platform's hosted arrangement serves: one
-# static program, the same whichever machine packs it.
-runner    = { cmd = ["okrun", "{}"], host = "same-arch", hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64", "freebsd-x86_64", "freebsd-aarch64"], built-as = { "freebsd-x86_64" = "x86_64-freebsd-musl", "freebsd-aarch64" = "aarch64-freebsd-musl" } }
+# static program, the same whichever machine packs it. `uefi-x86_64` (0.28.0):
+# the runner is a UEFI application of the row this platform defines below (the
+# core runner, which carries what it runs), so an ok image packs for firmware.
+# `dos-i686` (0.28.0; technical experiment only): the core runner as a program
+# of the DOS row below, so an i386 image packs for DOS (mcpp 2026.11.13.1 builds
+# a system's runner as the row the platform defines for it).
+runner    = { cmd = ["okrun", "{}"], host = "same-arch", hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64", "freebsd-x86_64", "freebsd-aarch64", "uefi-x86_64", "dos-i686"], built-as = { "freebsd-x86_64" = "x86_64-freebsd-musl", "freebsd-aarch64" = "aarch64-freebsd-musl" } }
 # `mcpp pack --mode self-contained`: a program of the packing machine that
 # carries the image in a section and runs it through libokrun (M3).
-carrier   = { package = "openkal-run@0.6.1", section = ".oke", main = "carrier/main.cpp" }
+carrier   = { package = "openkal-run@0.6.3", section = ".oke", main = "carrier/main.cpp" }
 # The `okb` package format (`mcpp pack --pkg-format okb`): the images of every
 # architecture as one file okrun runs (openkal-image docs/okb.md).
 plugin    = "build.mcpp"
@@ -51,18 +63,20 @@ debuggee = ["okrun", "--debugger", "{}"]
 # The C library and the C++ run-time inside an image. A package of the graph
 # that provides a layer takes its place (`provides`), and `false` leaves it out.
 [platform.layers]
-compiler-runtime = "openkal-llvm-runtime@0.20.1"
-"c++-abi"        = "openkal-llvm-runtime@0.20.1"
-c-abi            = { name = "openkal-musl", version = "0.29.4", default-features = false, features = ["posix", "malloc-mimalloc"] }
+compiler-runtime = "openkal-llvm-runtime@0.20.3"
+"c++-abi"        = "openkal-llvm-runtime@0.20.3"
+c-abi            = { name = "openkal-musl", version = "0.29.6", default-features = false, features = ["posix", "malloc-mimalloc"] }
 
 # Built for the building machine: `okld` writes and checks the notes, `okrun`
 # runs an image, `okprof` reads what a measured run recorded (0.23.0: the
 # order of a start's first executions, which a producer lays its code out by
 # and writes as the touch note).
 [platform.tools]
-okld   = "openkal-tools@0.6.1"
-okrun  = "openkal-tools@0.6.1"
-okprof = "openkal-tools@0.6.1"
+okld   = "openkal-tools@0.6.3"
+okrun  = "openkal-tools@0.6.3"
+okprof = "openkal-tools@0.6.3"
+# The seal of the DOS row (0.28.0): the stub of openkal-dos before an executable.
+okdos  = "openkal-dos-tools@0.1.0"
 
 # Every unit of an image (SPEC 12.2):
 #   -fPIC              the image is ET_DYN and has no text relocation;
@@ -131,6 +145,22 @@ cflags   = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=pac-ret+
 cxxflags = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=pac-ret+bti"]
 asmflags = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=pac-ret+bti"]
 
+# i386 (0.28.0): the 486's instructions (-march=i486) are the least machine an
+# i386 image runs on: DOSBox Staging 0.83, which runs the DOS row and its
+# carrier, executes RDTSC and not CMPXCHG8B under every `cputype' (measured), so
+# a sixty-four bit atomic is compiler-rt's call (atomic.c) rather than the
+# Pentium's instruction. An image is then the same bytes on Linux, on Windows and
+# beneath DOS's carrier. The floating point is the x87's, the convention's own
+# (SPEC 12.2).
+# The stack is aligned to sixteen bytes at a call (SPEC 12.2): the image's triple
+# names no system, for which clang keeps four, and a loader's code built for its
+# system relies on sixteen (measured: `movaps' of okrun's kal_time_monotonic,
+# entered from an image built at four, faults).
+[platform.build.'cfg(arch = "i686")']
+cflags   = ["-march=i486", "-mstack-alignment=16"]
+cxxflags = ["-march=i486", "-mstack-alignment=16"]
+asmflags = ["-march=i486"]
+
 # The link, by `ld.lld` itself: position-independent, every loadable segment
 # aligned to 64 KiB (the largest protection granularity among the systems),
 # bound now, no executable stack, both hash tables, what nothing reaches
@@ -138,7 +168,10 @@ asmflags = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=pac-ret+
 # and the unwind index an unwinder finds through `dl_iterate_phdr`; the relative
 # relocations packed (`-z pack-relative-relocs`, SPEC 12.2's packed relative
 # form): a loader reads clangd's 164 000 of them from 32 KiB rather than 3.9 MB
-# on every start, and the image is 4 MB smaller.
+# on every start, and the image is 4 MB smaller. `-z rela`: i386's default is
+# REL, whose addend is the word the relocation writes; an image states its
+# addends (RELA) on every architecture, so a loader and a placement read one
+# form (SPEC 12.2; the option is the default's form on the sixty-four bit ones).
 # An executable image is entered at `ok_main`, which its C library defines; its
 # notes come from `okld note-source`; `okld note` writes its requirements,
 # `okld place` its writable segments computed for the base it chooses from the
@@ -151,7 +184,7 @@ asmflags = ["-ffixed-x18", "-mno-outline-atomics", "-mbranch-protection=pac-ret+
 [platform.link]
 driver = "lld"
 start  = "ok_main"
-flags  = ["-shared", "-z", "max-page-size=65536", "-z", "pack-relative-relocs", "-z", "now", "-z", "noexecstack",
+flags  = ["-shared", "-z", "max-page-size=65536", "-z", "pack-relative-relocs", "-z", "rela", "-z", "now", "-z", "noexecstack",
           "--hash-style=both", "--gc-sections", "--icf=safe", "--eh-frame-hdr", "--build-id=sha1", "--emit-relocs",
           "-mllvm", "-emulated-tls"]
 inputs = [{ from = ["okld", "note-source"], as = "ok-notes.S" }]
@@ -171,15 +204,86 @@ seal   = [["okld", "note", "{}"], ["okld", "place", "{}"], ["okld", "check", "{}
 # On FreeBSD (0.26.0) the C library's implementation is openkal-freebsd in its
 # standalone arrangement, which openkal-musl names for that system: the rows
 # `<arch>-freebsd-musl` are the system with no C library of its own beneath.
+# `i686-linux-musl` (0.28.0) is the thirty-two bit row of Linux (openkal 0.25.1,
+# clause 5.5): openkal-linux's i386 system-call layer beneath openkal-musl's.
 targets   = ["x86_64-linux-gnu", "aarch64-linux-gnu", "x86_64-linux-musl", "aarch64-linux-musl",
              "x86_64-macos", "aarch64-macos", "x86_64-windows-gnu", "x86_64-windows-musl",
-             "x86_64-freebsd-musl", "aarch64-freebsd-musl"]
+             "x86_64-freebsd-musl", "aarch64-freebsd-musl", "i686-linux-musl"]
 toolchain = "llvm@23.1.3"
 
 [platform.hosted.layers]
-compiler-runtime = "openkal-llvm-runtime@0.20.1"
-"c++-abi"        = "openkal-llvm-runtime@0.20.1"
-c-abi            = { name = "openkal-musl", version = "0.29.4", default-features = false, features = ["posix", "malloc-mimalloc"] }
+compiler-runtime = "openkal-llvm-runtime@0.20.3"
+"c++-abi"        = "openkal-llvm-runtime@0.20.3"
+c-abi            = { name = "openkal-musl", version = "0.29.6", default-features = false, features = ["posix", "malloc-mimalloc"] }
+
+# UEFI (0.28.0): applications the firmware loads, on the same C library and C++
+# run-time over openkal-uefi (openkal-musl names it, `standalone', on
+# `cfg(os = "uefi")'). The row is PE: the C environment is the PE rows'
+# (mcpp 2026.11.13.1 realises it by the container, as on Windows), linked by
+# ld.lld's MinGW driver (`link-emulation = "i386pep"') as an EFI application.
+# The provider states the row's own conventions (`base = "none"': none of the
+# ok images' compile, link or seal), its layers and its runner: dirun boots the
+# application with xim's OVMF and its profile, and the board's exit
+# (board/qemu-exit.S, QEMU's debug-exit port) returns the status; the same file
+# makes standard error the console (OVMF's StdErr reaches no serial reader). The
+# machine has 2 GiB: memory is backed when the allocator reserves it, and the
+# allocator of a carrier and of the image it carries each place an arena at a
+# 256 MiB alignment (512 MiB, dirun's default, held one). A program that
+# wants no C library states `c-abi = false' for the row and is linked over
+# openkal-uefi alone.
+[[platform.define]]
+triple         = "x86_64-uefi"
+clang-triple   = "x86_64-unknown-uefi"
+object-format  = "pe"
+execution      = "uefi"
+exe-suffix     = ".efi"
+link-emulation = "i386pep"
+
+[[platform.provider]]
+name   = "uefi"
+serves = ["x86_64-uefi"]
+base   = "none"
+hosted = true
+
+layers = { compiler-runtime = "openkal-llvm-runtime@0.20.3", "c++-abi" = "openkal-llvm-runtime@0.20.3", c-abi = { name = "openkal-musl", version = "0.29.6", default-features = false, features = ["posix", "malloc-mimalloc"] } }
+link   = { driver = "lld", start = "efi_main", flags = ["--subsystem", "efi_application", "--gc-sections"], exe = "{name}.efi", inputs = [{ file = "board/qemu-exit.S" }], seal = [] }
+runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:ovmf}/dirun.toml", "--emulator", "{pkg:qemu-x86}/bin/qemu-system-x86_64", "--memory", "2048"], hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64"], requires = ["xim:dirun@0.3.2", "xim:qemu-x86@9.2.4-1", "xim:ovmf@9.2.4-1"] }
+
+# DOS (0.28.0; TECHNICAL EXPERIMENT ONLY, openkal-dos's README): programs a DPMI
+# host runs, on the same C library and C++ run-time over openkal-dos
+# (openkal-musl names it, `standalone', on `cfg(os = "dos")'). A program is the
+# stub of openkal-dos followed by an ELF32 i386 executable linked at its address;
+# `okdos seal' writes the stub. The row's flags are its conventions: there is no
+# thread register the toolchain can address, so thread-local storage is emulated
+# (openkal-llvm-runtime builds compiler-rt's `emutls.c' for the row), and a triple
+# with no system has no unwind tables by default, which the unwinder's own frames
+# need. The stack is aligned to sixteen bytes at a call, the System V i386
+# convention that openkal states for an i386 image (SPEC 12.2) and that a triple
+# with no system leaves at four: the row's code calls images and is called by
+# them. The processor is the 486, as for the i386 ok image (DOSBox Staging 0.83
+# executes no CMPXCHG8B, measured). The runner is dirun with DOSBox Staging and CWSDPMI beside the program
+# (xim's `dosbox-staging'). The memory allocator is musl's own (`malloc-mallocng'):
+# it asks openkal.memory for blocks and nothing else.
+[[platform.define]]
+triple        = "i686-dos-musl"
+clang-triple  = "i386-unknown-none-elf"
+object-format = "elf"
+data-model    = "ilp32"
+exe-suffix    = ".exe"
+execution     = "dos"
+tier          = "preview"
+march         = "i486"
+flags         = ["-femulated-tls", "-fasynchronous-unwind-tables", "-mstack-alignment=16", "-ffunction-sections", "-fdata-sections"]
+
+[[platform.provider]]
+name   = "dos"
+serves = ["i686-dos-musl"]
+base   = "none"
+hosted = true
+
+layers = { compiler-runtime = "openkal-llvm-runtime@0.20.3", "c++-abi" = "openkal-llvm-runtime@0.20.3", c-abi = { name = "openkal-musl", version = "0.29.6", default-features = false, features = ["posix", "malloc-mallocng"] } }
+link   = { driver = "lld", start = "okdos_entry", flags = ["-static", "--image-base=0x1000", "-z", "norelro", "--gc-sections", "--eh-frame-hdr"], seal = [["okdos", "seal", "{}"]] }
+runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:dosbox-staging}/dirun.toml", "--"], hosts = ["linux-x86_64", "macos-aarch64", "windows-x86_64"], requires = ["xim:dirun@0.3.2", "xim:dosbox-staging@0.83.0"] }
 
 # The family released together for openkal 0.17 (the 0.17.2 round: okb, the
 # runner's bundle and library interfaces, musl's renameat2; the 0.17.3 round:
@@ -225,27 +329,38 @@ c-abi            = { name = "openkal-musl", version = "0.29.4", default-features
 # openkal-llvm-runtime 0.20.1 on FreeBSD; 0.27.1, the implementations retire a
 # handle before closing it (openkal-linux 0.26.1, openkal-macos 0.23.1,
 # openkal-windows 0.21.1) and openkal-musl 0.29.4 delivers what a readiness
-# enquiry held with the rest): one version of each in a build. From 0.24.1 the members name one another by
+# enquiry held with the rest; 0.28.0, openkal 0.25.1 and i386: openkal-linux
+# 0.26.3, openkal-musl 0.29.5 and openkal-llvm-runtime 0.20.2 for `i686-linux-musl`,
+# and the implementations by the specification's minor version (openkal-macos
+# 0.23.2, openkal-windows 0.21.2, openkal-freebsd 0.1.2, openkal-image 0.6.2), and
+# UEFI: openkal-uefi 0.10.0 beneath openkal-musl 0.29.6 and openkal-llvm-runtime
+# 0.20.3, which take the optional interfaces from the implementation (or, in an
+# image, at run time) and serve the PE rows by their container, and openkal-image
+# 0.6.3, whose runner has a core for an implementation without files, processes
+# or threads): one version of each in a build. From 0.24.1 the members name one another by
 # compatible ranges (`^0.28.0`) and this group chooses the versions: mcpp
 # 2026.11.7.1 resolves within it, and a fix of one member is that member's
 # release and a patch of this group, released together through one index change
 # (tools/family_release.py, .github/workflows/family-release.yml).
 [platform.versions]
-openkal              = "0.25.0"
-openkal-linux        = "0.26.1"
-openkal-macos        = "0.23.1"
-openkal-windows      = "0.21.1"
-openkal-freebsd      = "0.1.0"
-openkal-musl         = "0.29.4"
-openkal-llvm-runtime = "0.20.1"
-openkal-ld           = "0.6.1"
-openkal-run          = "0.6.1"
-openkal-tools        = "0.6.1"
+openkal              = "0.25.1"
+openkal-linux        = "0.26.3"
+openkal-macos        = "0.23.2"
+openkal-windows      = "0.21.2"
+openkal-freebsd      = "0.1.2"
+openkal-uefi         = "0.10.0"
+openkal-dos          = "0.1.0"
+openkal-dos-tools    = "0.1.0"
+openkal-musl         = "0.29.6"
+openkal-llvm-runtime = "0.20.3"
+openkal-ld           = "0.6.3"
+openkal-run          = "0.6.3"
+openkal-tools        = "0.6.3"
 
 # The plugin's tool, `okld bundle`, which writes the okb, and its library, the
 # provider of a package format (mcpp.plugins.platform).
 [build-dependencies]
-openkal-tools = { version = "0.6.1", tools = ["okld"] }
+openkal-tools = { version = "0.6.3", tools = ["okld"] }
 
 [build-dependencies.mcpp]
 plugins = { version = "0.20.0", features = ["plugins-platform"], host-module = true }
