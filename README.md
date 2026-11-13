@@ -217,6 +217,30 @@ own openkal implementation (`checks/hosted`). `[host] platform` selects it for
 the host graph: build programs are then compiled as ok images of the machine's
 architecture and run by okrun (`checks/host-graph`).
 
+## UEFI applications (0.28.0)
+
+`x86_64-uefi` is a row this platform defines and serves (`[[platform.define]]`,
+`[[platform.provider]] name = "uefi"`): an application the firmware loads, on
+the same C library and C++ run-time over openkal-uefi, so it is written in C++23
+with `import std`:
+
+```toml
+[target.x86_64-uefi]
+platform = "openkal-platform@0.28.0"
+```
+
+The row is PE. mcpp 2026.11.13.1 realises the C environment by the container, as
+for Windows, and ld.lld's MinGW driver (`link-emulation = "i386pep"`) links an
+EFI application entered at `efi_main`. The provider states the row's own link,
+layers and runner over `base = "none"`, so none of the ok images' conventions
+reach it: `mcpp run` boots the application with dirun, xim's OVMF and its
+profile (`{pkg:ovmf}/dirun.toml`) and QEMU, and `board/qemu-exit.S` returns the
+status through QEMU's debug-exit port. A program that wants no C library states
+`c-abi = false` for the row. Measured: `std::println` and `std::ranges::sort`, a
+1.2 MB application, printed and returned 42 under OVMF in 0.8 s. The row and its
+runner were openkal-uefi-platform 0.1.0, which is folded here and into
+openkal-uefi's example.
+
 ## Version group
 
 `[platform.versions]` names one version of each package of the family. From
