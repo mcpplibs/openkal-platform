@@ -241,6 +241,17 @@ status through QEMU's debug-exit port. A program that wants no C library states
 runner were openkal-uefi-platform 0.1.0, which is folded here and into
 openkal-uefi's example.
 
+An ok image runs on firmware as it runs on the other systems: the runner's
+`hosts` include `uefi-x86_64`, so `mcpp pack --pkg-format single-file --systems
+uefi-x86_64` builds the carrier for the row and places the image in its `.oke`
+section, and the core runner (openkal-image 0.6.3) places the image through
+`openkal.exec`. The board makes standard error the console (OVMF's `StdErr`
+reaches no serial reader), and the machine has 2 GiB: memory is backed when the
+allocator reserves it, and the carrier's allocator and the image's each place a
+32 MiB arena at a 256 MiB alignment (openkal-musl 0.29.6, openkal-uefi 0.10.0).
+Measured: an image that prints, writes to standard error, throws and catches,
+carried by a 2.4 MB application, returned its status 7 under OVMF in 0.4 s.
+
 ## Version group
 
 `[platform.versions]` names one version of each package of the family. From

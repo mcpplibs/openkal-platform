@@ -38,8 +38,10 @@ toolchain = "llvm@23.1.3"
 # as, where the engine holds no convention for the system. A package that
 # carries its runner (`mcpp pack --mode self-contained --systems all`) builds
 # FreeBSD's as the musl identity this platform's hosted arrangement serves: one
-# static program, the same whichever machine packs it.
-runner    = { cmd = ["okrun", "{}"], host = "same-arch", hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64", "freebsd-x86_64", "freebsd-aarch64"], built-as = { "freebsd-x86_64" = "x86_64-freebsd-musl", "freebsd-aarch64" = "aarch64-freebsd-musl" } }
+# static program, the same whichever machine packs it. `uefi-x86_64` (0.28.0):
+# the runner is a UEFI application of the row this platform defines below (the
+# core runner, which carries what it runs), so an ok image packs for firmware.
+runner    = { cmd = ["okrun", "{}"], host = "same-arch", hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64", "freebsd-x86_64", "freebsd-aarch64", "uefi-x86_64"], built-as = { "freebsd-x86_64" = "x86_64-freebsd-musl", "freebsd-aarch64" = "aarch64-freebsd-musl" } }
 # `mcpp pack --mode self-contained`: a program of the packing machine that
 # carries the image in a section and runs it through libokrun (M3).
 carrier   = { package = "openkal-run@0.6.3", section = ".oke", main = "carrier/main.cpp" }
@@ -194,7 +196,11 @@ c-abi            = { name = "openkal-musl", version = "0.29.6", default-features
 # The provider states the row's own conventions (`base = "none"': none of the
 # ok images' compile, link or seal), its layers and its runner: dirun boots the
 # application with xim's OVMF and its profile, and the board's exit
-# (board/qemu-exit.S, QEMU's debug-exit port) returns the status. A program that
+# (board/qemu-exit.S, QEMU's debug-exit port) returns the status; the same file
+# makes standard error the console (OVMF's StdErr reaches no serial reader). The
+# machine has 2 GiB: memory is backed when the allocator reserves it, and the
+# allocator of a carrier and of the image it carries each place an arena at a
+# 256 MiB alignment (512 MiB, dirun's default, held one). A program that
 # wants no C library states `c-abi = false' for the row and is linked over
 # openkal-uefi alone.
 [[platform.define]]
@@ -213,7 +219,7 @@ hosted = true
 
 layers = { compiler-runtime = "openkal-llvm-runtime@0.20.3", "c++-abi" = "openkal-llvm-runtime@0.20.3", c-abi = { name = "openkal-musl", version = "0.29.6", default-features = false, features = ["posix", "malloc-mimalloc"] } }
 link   = { driver = "lld", start = "efi_main", flags = ["--subsystem", "efi_application", "--gc-sections"], exe = "{name}.efi", inputs = [{ file = "board/qemu-exit.S" }], seal = [] }
-runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:ovmf}/dirun.toml", "--emulator", "{pkg:qemu-x86}/bin/qemu-system-x86_64"], hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64"], requires = ["xim:dirun@0.3.2", "xim:qemu-x86@9.2.4-1", "xim:ovmf@9.2.4-1"] }
+runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:ovmf}/dirun.toml", "--emulator", "{pkg:qemu-x86}/bin/qemu-system-x86_64", "--memory", "2048"], hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64"], requires = ["xim:dirun@0.3.2", "xim:qemu-x86@9.2.4-1", "xim:ovmf@9.2.4-1"] }
 
 # The family released together for openkal 0.17 (the 0.17.2 round: okb, the
 # runner's bundle and library interfaces, musl's renameat2; the 0.17.3 round:
