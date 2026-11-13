@@ -128,6 +128,33 @@ specification by its minor version (openkal-macos 0.23.2, openkal-windows 0.21.2
 openkal-freebsd 0.1.2; openkal-image 0.6.2), so a project that names openkal
 0.25.1 resolves with them.
 
+Platform 0.28.0 also serves the ok image of the thirty-two bit class,
+`i686-openkal` (openkal 0.25.1, clauses 5.5 and 12.2; openkal-image 0.6.3 reads,
+checks, places, loads and debugs it). Its conventions are the ok images' own,
+and three apply to every architecture or to i386 alone:
+- `-z rela`: an image states its addends, which is i386's one difference from
+  its linker's default.
+- `-march=i586`: the Pentium's instructions, the least machine an i386 image
+  runs on and the one DOS's emulators model.
+- `-mstack-alignment=16`: the System V i386 convention's sixteen bytes at a call
+  (SPEC 12.2). The image's triple names no system, and for such a triple clang
+  keeps four. Measured: okrun's own code, built for Linux, faulted on a `movaps`
+  when an image built at four called it.
+
+An i386 image runs on an i386 runner (`i686-linux-musl` on Linux), never inside
+a runner of another architecture. mcpp names the row `planned` until its pin of
+this platform serves it, so a project opts in with the toolchain:
+
+```toml
+[target.i686-openkal]
+platform  = "openkal-platform@0.28.0"
+toolchain = "llvm@23.1.3"
+```
+
+Measured: a C++23 image with `import std` and an exception across a frame,
+built so, runs under an okrun built for `i686-linux-musl` on x86_64 Linux and
+returns its status.
+
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
 another platform, or none, with `platform = "..."` or `--platform`.
@@ -268,15 +295,20 @@ stub of openkal-dos followed by an ELF32 i386 executable linked at its address;
 the seal `okdos` (openkal-dos-tools) writes the stub, and the stub enters 32-bit
 protected mode through the machine's DPMI host or CWSDPMI beside the program. The
 row's flags are its conventions: `-march=i586`, emulated thread-local storage
-(there is no thread register the toolchain can address) and unwind tables for
-every unit. The provider's link is `ld.lld -static --image-base=0x1000 -z norelro
+(there is no thread register the toolchain can address), unwind tables for
+every unit, and the stack aligned to sixteen bytes at a call, as an i386 ok
+image's is (the row's code calls images and is called by them). The provider's link is `ld.lld -static --image-base=0x1000 -z norelro
 --gc-sections --eh-frame-hdr`, entered at `okdos_entry`, over `base = "none"`, and
 the platform's tools it carries are the one its seal names (mcpp 2026.11.13.1):
 a DOS build builds `okdos` alone, and an ok image does not build it. `mcpp run`
 runs the program with dirun and xim's DOSBox Staging profile, which places
 CWSDPMI beside it. Measured: a C++23 program with `import std`, an exception
 crossing a frame, `std::ranges::sort`, a sleep and `getenv` printed and returned
-7 under DOSBox Staging.
+7 under DOSBox Staging. Through openkal-dos's `fs`, `std::filesystem` and
+`std::fstream` work on the FAT volumes: a program wrote, appended, read, renamed,
+listed, resized and removed files and directories there (measured). openkal-dos
+provides `abort`, `env`, `exec`, `fs`, `memory`, `stream`, `terminal` and
+`time`. `region` is absent, because the DPMI host CWSDPMI is DPMI 0.90.
 
 ## Version group
 
