@@ -9,6 +9,8 @@ name: CI
 #               and self-contained), one target alone, a single file and an okb
 #   hosted      the machine's own triple takes the platform's hosted arrangement
 #   host-graph  a build program is compiled as an ok image and run by okrun
+#   i686        Linux's thirty-two bit row: the hosted program and the
+#               specification's conformance suite, run on Linux x86_64
 #   freebsd     the musl rows of FreeBSD are built here and run in a FreeBSD VM,
 #               with okrun built for them running an ok image there
 #
@@ -224,6 +226,57 @@ jobs:
   # programs; the x86_64 one runs in a FreeBSD virtual machine, beside okrun
   # built for the same row from the openkal-image release this group names,
   # which runs an ok image there.
+  # I686 (0.28.0): Linux's thirty-two bit row, which a Linux x86_64 machine runs
+  # itself: the hosted program, and the specification's conformance suite through
+  # the platform, over the implementation at the group's version.
+  i686:
+    name: i686-linux-musl (built and run on Linux x86_64)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings and mcpp
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
+            | bash -s "$XLINGS_VERSION"
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+          for attempt in 1 2 3 4 5 6; do
+            xlings update > /dev/null 2>&1 || true
+            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
+            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
+            sleep 60
+          done
+          mcpp --version
+          mcpp self config --mirror GLOBAL
+
+      - name: The hosted program, thirty-two bit
+        working-directory: checks/hosted
+        run: |
+          mcpp run --target i686-linux-musl -- one two | tee run.log
+          grep -q "hosted ok: hosted" run.log || { echo "::error::the hosted program's output"; exit 1; }
+          grep -q "hosted args: 3 two" run.log || { echo "::error::the hosted program's arguments"; exit 1; }
+          p=$(find target/i686-linux-musl -path '*bin/hosted' -type f | head -1)
+          file "$p"
+          file "$p" | grep -q 'ELF 32-bit' && file "$p" | grep -q 'Intel 80386' && file "$p" | grep -q 'statically linked' \
+            || { echo "::error::i686-linux-musl is not a static i386 program"; exit 1; }
+
+      - name: The specification's conformance suite
+        run: |
+          set -euo pipefail
+          spec=$(sed -n 's/^openkal *= *"\(.*\)"/\1/p' mcpp.toml | head -1)
+          impl=$(sed -n 's/^openkal-linux *= *"\(.*\)"/\1/p' mcpp.toml | head -1)
+          git clone --quiet --depth 1 --branch "$spec" https://github.com/mcpplibs/openkal.git .spec
+          git clone --quiet --depth 1 --branch "$impl" https://github.com/mcpplibs/openkal-linux.git .impl
+          bash .spec/tools/run-conformance.sh openkal-linux .impl full,optional \
+            --target i686-linux-musl --platform "path:$GITHUB_WORKSPACE" | tee conformance.log
+          grep -qE '^observations: [0-9]+ held, 0 did not hold' conformance.log \
+            || { echo "::error::an observation did not hold on i686-linux-musl"; exit 1; }
+
   freebsd:
     name: freebsd (built for x86_64 and aarch64, run in a VM)
     runs-on: ubuntu-24.04
