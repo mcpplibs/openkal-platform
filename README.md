@@ -27,10 +27,10 @@ mcpp pack --target x86_64-openkal --pkg-format okb        # one file okrun runs 
 
 | Group | Value |
 |---|---|
-| targets | `x86_64-openkal`, `aarch64-openkal` |
+| targets | `x86_64-openkal`, `aarch64-openkal`, `i686-openkal` (0.28.0) |
 | toolchain | `llvm@23.1.3` |
 | layers | `c-abi` openkal-musl (`posix`), `c++-abi` and `compiler-runtime` openkal-llvm-runtime |
-| tools | `okld`, `okrun`, `okprof` (openkal-tools) |
+| tools | `okld`, `okrun`, `okprof` (openkal-tools); `okdos` (openkal-dos-tools), the seal of the DOS row (0.28.0) |
 | build | `-fPIC -femulated-tls -fvisibility=hidden -fasynchronous-unwind-tables`, stack-clash protection, `-ffunction-sections -fdata-sections`; frame pointers, `-fstack-protector-strong -mstack-protector-guard=global`, `-ftrivial-auto-var-init=zero`, libc++'s fast hardening (0.23.0); on x86_64 `-fcf-protection=full`; on aarch64 `-ffixed-x18 -mno-outline-atomics -mbranch-protection=pac-ret+bti` (not `standard`, which clang 23 counts the guarded control stack in) |
 | link | `ld.lld`, entry `ok_main`, 64 KiB pages, relative relocations packed, `--gc-sections --icf=safe`, `--build-id=sha1`, retained debug relocations (0.24.0), the image notes produced by `okld note-source` |
 | seal | the selected LLVM toolchain's `llvm-objcopy` prunes ordinary static relocations (0.24.0); `okld note`; `okld place`, the writable segments computed for the base the image's bytes choose (openkal 0.23); then `okld check --with` the shared images the program needs |
