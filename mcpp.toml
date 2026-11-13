@@ -68,6 +68,8 @@ c-abi            = { name = "openkal-musl", version = "0.29.6", default-features
 okld   = "openkal-tools@0.6.3"
 okrun  = "openkal-tools@0.6.3"
 okprof = "openkal-tools@0.6.3"
+# The seal of the DOS row (0.28.0): the stub of openkal-dos before an executable.
+okdos  = "openkal-dos-tools@0.1.0"
 
 # Every unit of an image (SPEC 12.2):
 #   -fPIC              the image is ET_DYN and has no text relocation;
@@ -221,6 +223,38 @@ layers = { compiler-runtime = "openkal-llvm-runtime@0.20.3", "c++-abi" = "openka
 link   = { driver = "lld", start = "efi_main", flags = ["--subsystem", "efi_application", "--gc-sections"], exe = "{name}.efi", inputs = [{ file = "board/qemu-exit.S" }], seal = [] }
 runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:ovmf}/dirun.toml", "--emulator", "{pkg:qemu-x86}/bin/qemu-system-x86_64", "--memory", "2048"], hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64"], requires = ["xim:dirun@0.3.2", "xim:qemu-x86@9.2.4-1", "xim:ovmf@9.2.4-1"] }
 
+# DOS (0.28.0; TECHNICAL EXPERIMENT ONLY, openkal-dos's README): programs a DPMI
+# host runs, on the same C library and C++ run-time over openkal-dos
+# (openkal-musl names it, `standalone', on `cfg(os = "dos")'). A program is the
+# stub of openkal-dos followed by an ELF32 i386 executable linked at its address;
+# `okdos seal' writes the stub. The row's flags are its conventions: there is no
+# thread register the toolchain can address, so thread-local storage is emulated
+# (openkal-llvm-runtime builds compiler-rt's `emutls.c' for the row), and a triple
+# with no system has no unwind tables by default, which the unwinder's own frames
+# need. The runner is dirun with DOSBox Staging and CWSDPMI beside the program
+# (xim's `dosbox-staging'). The memory allocator is musl's own (`malloc-mallocng'):
+# it asks openkal.memory for blocks and nothing else.
+[[platform.define]]
+triple        = "i686-dos-musl"
+clang-triple  = "i386-unknown-none-elf"
+object-format = "elf"
+data-model    = "ilp32"
+exe-suffix    = ".exe"
+execution     = "dos"
+tier          = "preview"
+march         = "i586"
+flags         = ["-femulated-tls", "-fasynchronous-unwind-tables", "-ffunction-sections", "-fdata-sections"]
+
+[[platform.provider]]
+name   = "dos"
+serves = ["i686-dos-musl"]
+base   = "none"
+hosted = true
+
+layers = { compiler-runtime = "openkal-llvm-runtime@0.20.3", "c++-abi" = "openkal-llvm-runtime@0.20.3", c-abi = { name = "openkal-musl", version = "0.29.6", default-features = false, features = ["posix", "malloc-mallocng"] } }
+link   = { driver = "lld", start = "okdos_entry", flags = ["-static", "--image-base=0x1000", "-z", "norelro", "--gc-sections", "--eh-frame-hdr"], seal = [["okdos", "seal", "{}"]] }
+runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:dosbox-staging}/dirun.toml", "--"], hosts = ["linux-x86_64", "macos-aarch64", "windows-x86_64"], requires = ["xim:dirun@0.3.2", "xim:dosbox-staging@0.83.0"] }
+
 # The family released together for openkal 0.17 (the 0.17.2 round: okb, the
 # runner's bundle and library interfaces, musl's renameat2; the 0.17.3 round:
 # musl takes a program's arguments when it is entered; the 0.18.0 round: a
@@ -285,6 +319,7 @@ openkal-macos        = "0.23.2"
 openkal-windows      = "0.21.2"
 openkal-freebsd      = "0.1.2"
 openkal-uefi         = "0.10.0"
+openkal-dos          = "0.1.0"
 openkal-musl         = "0.29.6"
 openkal-llvm-runtime = "0.20.3"
 openkal-ld           = "0.6.3"

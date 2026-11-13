@@ -252,6 +252,32 @@ allocator reserves it, and the carrier's allocator and the image's each place a
 Measured: an image that prints, writes to standard error, throws and catches,
 carried by a 2.4 MB application, returned its status 7 under OVMF in 0.4 s.
 
+## DOS programs (0.28.0; technical experiment only)
+
+`i686-dos-musl` is a row this platform defines and serves (`[[platform.provider]]
+name = "dos"`): a program a DPMI host runs, on the same C library and C++
+run-time over openkal-dos, so it is written in C++23 with `import std`:
+
+```toml
+[target.i686-dos-musl]
+platform = "openkal-platform@0.28.0"
+```
+
+The row is TECHNICAL EXPERIMENT ONLY (openkal-dos's README). A program is the
+stub of openkal-dos followed by an ELF32 i386 executable linked at its address;
+the seal `okdos` (openkal-dos-tools) writes the stub, and the stub enters 32-bit
+protected mode through the machine's DPMI host or CWSDPMI beside the program. The
+row's flags are its conventions: `-march=i586`, emulated thread-local storage
+(there is no thread register the toolchain can address) and unwind tables for
+every unit. The provider's link is `ld.lld -static --image-base=0x1000 -z norelro
+--gc-sections --eh-frame-hdr`, entered at `okdos_entry`, over `base = "none"`, and
+the platform's tools it carries are the one its seal names (mcpp 2026.11.13.1):
+a DOS build builds `okdos` alone, and an ok image does not build it. `mcpp run`
+runs the program with dirun and xim's DOSBox Staging profile, which places
+CWSDPMI beside it. Measured: a C++23 program with `import std`, an exception
+crossing a frame, `std::ranges::sort`, a sleep and `getenv` printed and returned
+7 under DOSBox Staging.
+
 ## Version group
 
 `[platform.versions]` names one version of each package of the family. From
