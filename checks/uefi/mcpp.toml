@@ -1,0 +1,12 @@
+# The UEFI row (0.28.0): an application the firmware loads, on the family's C
+# library and C++ run-time over openkal-uefi. The platform is the directory above.
+[package]
+name    = "uefi"
+version = "0.1.0"
+
+[targets.uefi]
+kind = "bin"
+main = "src/main.cpp"
+
+[target.x86_64-uefi]
+platform = { path = "../.." }

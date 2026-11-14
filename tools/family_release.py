@@ -42,7 +42,8 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 # The packages one repository releases under one tag and one archive.
 REPOSITORY = {"openkal-ld": "openkal-image", "openkal-run": "openkal-image",
-              "openkal-tools": "openkal-image", "openkal-bind": "openkal-image"}
+              "openkal-tools": "openkal-image", "openkal-bind": "openkal-image",
+              "openkal-dos-tools": "openkal-dos"}
 INDEX_RAW = "https://raw.githubusercontent.com/mcpplibs/mcpp-index/main/pkgs/o/{}.lua"
 # The layers whose objects an image links, by the directory mcpp builds them into.
 LAYERS = ("mcpplibs_openkal-musl", "mcpplibs_openkal-llvm-runtime")
