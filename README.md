@@ -144,13 +144,14 @@ and three apply to every architecture or to i386 alone:
   when an image built at four called it.
 
 An i386 image runs on an i386 runner (`i686-linux-musl` on Linux), never inside
-a runner of another architecture. mcpp names the row `planned` until its pin of
-this platform serves it, so a project opts in with the toolchain:
+a runner of another architecture. mcpp registers the row `planned`; this
+platform lists it among its targets with its toolchain, which serves it (mcpp
+2026.11.14.1+), so a project names only the platform, and `--target openkal`
+builds the three architectures:
 
 ```toml
 [target.i686-openkal]
-platform  = "openkal-platform@0.28.0"
-toolchain = "llvm@23.1.3"
+platform = "openkal-platform@0.28.0"
 ```
 
 Measured: a C++23 image with `import std` and an exception across a frame,
