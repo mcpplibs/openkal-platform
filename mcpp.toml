@@ -331,10 +331,11 @@ runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:dosbox-staging}
 # openkal-llvm-runtime 0.20.1 on FreeBSD; 0.27.1, the implementations retire a
 # handle before closing it (openkal-linux 0.26.1, openkal-macos 0.23.1,
 # openkal-windows 0.21.1) and openkal-musl 0.29.4 delivers what a readiness
-# enquiry held with the rest; 0.28.0, openkal 0.25.1 and i386: openkal-linux
+# enquiry held with the rest; 0.28.0, openkal 0.25.3 (its suite keeps the surface
+# under a discarding link and is an mtest project of its own) and i386: openkal-linux
 # 0.26.3, openkal-musl 0.29.5 and openkal-llvm-runtime 0.20.2 for `i686-linux-musl`,
 # and the implementations by the specification's minor version (openkal-macos
-# 0.23.2, openkal-windows 0.21.2, openkal-freebsd 0.1.2, openkal-image 0.6.2), and
+# 0.23.3, which supplies its libSystem stub only to a link without an SDK, openkal-windows 0.21.2, openkal-freebsd 0.1.2, openkal-image 0.6.2), and
 # UEFI: openkal-uefi 0.10.0 beneath openkal-musl 0.29.6 and openkal-llvm-runtime
 # 0.20.3, which take the optional interfaces from the implementation (or, in an
 # image, at run time) and serve the PE rows by their container, and openkal-image
@@ -345,9 +346,9 @@ runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:dosbox-staging}
 # release and a patch of this group, released together through one index change
 # (tools/family_release.py, .github/workflows/family-release.yml).
 [platform.versions]
-openkal              = "0.25.1"
+openkal              = "0.25.3"
 openkal-linux        = "0.26.3"
-openkal-macos        = "0.23.2"
+openkal-macos        = "0.23.3"
 openkal-windows      = "0.21.2"
 openkal-freebsd      = "0.1.2"
 openkal-uefi         = "0.10.0"

@@ -123,10 +123,11 @@ arrangement (openkal 0.25.1, clause 5.5): openkal-musl 0.29.5 over openkal-linux
 0.26.3's i386 system-call layer, with openkal-llvm-runtime 0.20.2 above it. A
 Linux x86_64 machine runs its programs itself; CI builds and runs a hosted
 program there and the specification's conformance suite through the platform.
-The group follows openkal 0.25.1, and its implementations declare the
-specification by its minor version (openkal-macos 0.23.2, openkal-windows 0.21.2,
-openkal-freebsd 0.1.2; openkal-image 0.6.2), so a project that names openkal
-0.25.1 resolves with them.
+The group follows openkal 0.25.3, whose conformance suite keeps the surface under
+a link that discards what nothing reaches, and its implementations declare the
+specification by its minor version (openkal-macos 0.23.3, openkal-windows 0.21.2,
+openkal-freebsd 0.1.2; openkal-image 0.6.2), so a project that names any patch of
+openkal 0.25 resolves with them.
 
 Platform 0.28.0 also serves the ok image of the thirty-two bit class,
 `i686-openkal` (openkal 0.25.1, clauses 5.5 and 12.2; openkal-image 0.6.3 reads,
