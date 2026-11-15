@@ -367,7 +367,7 @@ openkal-tools        = "0.6.4"
 # The plugin's tool, `okld bundle`, which writes the okb, and its library, the
 # provider of a package format (mcpp.plugins.platform).
 [build-dependencies]
-openkal-tools = { version = "0.6.3", tools = ["okld"] }
+openkal-tools = { version = "0.6.4", tools = ["okld"] }
 
 [build-dependencies.mcpp]
 plugins = { version = "0.20.0", features = ["plugins-platform"], host-module = true }
