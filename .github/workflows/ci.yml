@@ -41,7 +41,7 @@ on:
 
 env:
   MCPP_SOURCE_REF: ${{ github.event.inputs.mcpp_ref || vars.MCPP_SOURCE_REF || '' }}
-  MCPP_VERSION: 2026.11.14.1
+  MCPP_VERSION: 2026.11.16.1
   XLINGS_VERSION: v2026.10.26.1
   XLINGS_NON_INTERACTIVE: '1'
 
@@ -312,10 +312,10 @@ jobs:
         working-directory: checks/uefi
         run: |
           set +e
-          mcpp run --release --target x86_64-uefi | tee run.log
+          mcpp run --release --target x86_64-uefi -- one "two three" | tee run.log
           status=${PIPESTATUS[0]}
           set -e
-          grep -q "uefi ok: \[1, 2, 3\] 1" run.log || { echo "::error::the application's output"; exit 1; }
+          grep -q 'uefi ok: \[1, 2, 3\] \["one", "two three"\]' run.log || { echo "::error::the application's output or arguments"; exit 1; }
           [ "$status" -eq 42 ] || { echo "::error::the application returned $status, not 42"; exit 1; }
           p=$(find target/x86_64-uefi -path '*bin/uefi.efi' -type f | head -1)
           file "$p"
