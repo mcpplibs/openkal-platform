@@ -355,10 +355,10 @@ jobs:
         working-directory: checks/uefi
         run: |
           set +e
-          mcpp run --release --target x86_64-uefi -- one "two three" | tee run.log
+          mcpp run --release --target x86_64-uefi -- one "two three" "a   b" | tee run.log
           status=${PIPESTATUS[0]}
           set -e
-          grep -q 'uefi ok: \[1, 2, 3\] \["one", "two three"\]' run.log || { echo "::error::the application's output or arguments"; exit 1; }
+          grep -q 'uefi ok: \[1, 2, 3\] \["one", "two three", "a   b"\]' run.log || { echo "::error::the application's output or arguments"; exit 1; }
           [ "$status" -eq 42 ] || { echo "::error::the application returned $status, not 42"; exit 1; }
           p=$(find target/x86_64-uefi -path '*bin/uefi.efi' -type f | head -1)
           file "$p"
@@ -465,11 +465,24 @@ jobs:
             status=${PIPESTATUS[0]}
             set -e
             grep -q 'dos ok: \["one", "two"\]' run.log && grep -q 'caught: across a frame' run.log \
+              && grep -q 'deep: 2080' run.log \
               || { echo "::error::the DOS program's output ($mode)"; exit 1; }
             [ "$status" -eq 7 ] || { echo "::error::the DOS program returned $status, not 7 ($mode)"; exit 1; }
           done
           p=$(find target/i686-dos-musl -path '*bin/dos.exe' -type f | head -1)
           file "$p"
+          # The row's stack (0.29.1): the executable after the stub states 1 MiB in PT_GNU_STACK.
+          python3 - "$p" <<'PY'
+          import struct, sys
+          data = open(sys.argv[1], "rb").read()
+          at = data.find(b"\x7fELF\x01\x01")
+          phoff, = struct.unpack_from("<I", data, at + 28)
+          phentsize, phnum = struct.unpack_from("<HH", data, at + 42)
+          sizes = [struct.unpack_from("<6I", data, at + phoff + i * phentsize)[5]
+                   for i in range(phnum) if struct.unpack_from("<I", data, at + phoff + i * phentsize)[0] == 0x6474E551]
+          print("PT_GNU_STACK memsz:", sizes)
+          sys.exit(0 if sizes == [1048576] else "::error::the DOS program states no 1 MiB stack")
+          PY
 
       - name: The i386 image carried as a DOS program
         working-directory: checks/i386

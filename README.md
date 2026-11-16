@@ -165,7 +165,7 @@ builds openkal-run's core runner as a program of the DOS row below, with the
 image in its `.oke` section. Measured under DOSBox Staging: the image sorted its
 arguments, caught its exception, read DOS's `PATH` and returned 7.
 
-Platform 0.29.0 requires mcpp 2026.11.16.1. Every runner here that boots a
+Platform 0.29.0 and 0.29.1 require mcpp 2026.11.16.1. Every runner here that boots a
 machine is enabled on request: the UEFI row's (QEMU and OVMF), the DOS row's
 (DOSBox Staging), and, new, the hosted rows' runners on another system. FreeBSD
 programs run in the FreeBSD virtual machine of xim's disk image packages, and
@@ -176,13 +176,15 @@ until a project or this machine does:
 
 ```toml
 [target.x86_64-freebsd-musl]
-platform = "openkal-platform@0.29.0"
+platform = "openkal-platform@0.29.1"
 runner   = { enabled = true }
 ```
 
-The UEFI runner passes the program's arguments (`--`, with ovmf 9.2.4-3's Shell
-profile, whose arguments dirun 0.5.0 quotes for the Shell, so one with a blank
-arrives whole), and openkal-uefi 0.11.0 implements `openkal.fs` over the firmware's
+The UEFI runner passes the program's arguments (`--`, with ovmf 9.2.4-4's Shell
+profile, whose arguments dirun quotes for the Shell, so one with a blank arrives
+whole; openkal-uefi 0.11.1 divides them from the load options, so runs of blanks
+inside one are kept). The application's disk is a writable FAT32 image (dirun
+0.6.0, `disk = "fat-image"`), so it can write files; openkal-uefi implements `openkal.fs` over the firmware's
 file system and `openkal.random` over its RNG protocol, beneath openkal-musl
 0.29.8. okrun is a host for `macos-x86_64` (the release build of openkal-macos
 0.23.4 links) and `linux-i686` (built as `i686-linux-musl`), so `--systems all`
@@ -286,7 +288,7 @@ with `import std`:
 
 ```toml
 [target.x86_64-uefi]
-platform = "openkal-platform@0.29.0"
+platform = "openkal-platform@0.29.1"
 runner   = { enabled = true }
 ```
 
@@ -321,7 +323,7 @@ run-time over openkal-dos, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-dos-musl]
-platform = "openkal-platform@0.28.0"
+platform = "openkal-platform@0.29.1"
 ```
 
 The row is TECHNICAL EXPERIMENT ONLY (openkal-dos's README). A program is the
@@ -332,8 +334,8 @@ row's flags are its conventions: `-march=i486`, emulated thread-local storage
 (there is no thread register the toolchain can address), unwind tables for
 every unit, and the stack aligned to sixteen bytes at a call, as an i386 ok
 image's is (the row's code calls images and is called by them). The provider's
-link is `ld.lld -static --image-base=0x1000 -z norelro --gc-sections
---eh-frame-hdr`, entered at `okdos_entry`, over `base = "none"`, and
+link is `ld.lld -static --image-base=0x1000 -z norelro -z stack-size=1048576
+--gc-sections --eh-frame-hdr`, entered at `okdos_entry`, over `base = "none"`, and
 the platform's tools it carries are the one its seal names (mcpp 2026.11.13.1):
 a DOS build builds `okdos` alone, and an ok image does not build it. `mcpp run`
 runs the program with dirun and xim's DOSBox Staging profile, which places
@@ -344,6 +346,13 @@ crossing a frame, `std::ranges::sort`, a sleep and `getenv` printed and returned
 listed, resized and removed files and directories there (measured). openkal-dos
 provides `abort`, `env`, `exec`, `fs`, `memory`, `stream`, `terminal` and
 `time`. `region` is absent, because the DPMI host CWSDPMI is DPMI 0.90.
+
+The stack (0.29.1) is the executable's statement: the row links with `-z
+stack-size=1048576`, and openkal-dos 0.1.1's stub reads PT_GNU_STACK's size and
+places the stack above a guard page (DPMI `0507h`), so an overflow is a reported
+page fault rather than a write over the program. A project states another size
+with its own link flags. Measured: 64 frames of 8 KiB return under DOSBox
+Staging.
 
 ## Version group
 
@@ -380,7 +389,7 @@ previous patch's.
 | `checks/host-graph` | a build program runs as an ok image |
 | `checks/snapshot` | a C++ program starts from a snapshot of its initialisers, and a start whose named value differs does not |
 | `checks/i386` | an ok image of i386 is built in both modes, checked by okld and run by okrun built for i686-linux-musl; packed with `--systems dos-i686`, it runs as a DOS program |
-| `checks/dos` | a program of i686-dos-musl runs in both modes under DOSBox Staging (technical experiment only) |
+| `checks/dos` | a program of i686-dos-musl runs in both modes under DOSBox Staging, with a 512 KiB recursion, and states a 1 MiB stack (technical experiment only) |
 | family release | the group's members are tagged and mirrored, both mcpp releases resolve an image of it, and a patch removes no symbol |
 
 ## License
