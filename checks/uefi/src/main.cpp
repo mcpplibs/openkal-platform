@@ -1,6 +1,7 @@
 // The C++ a UEFI application is written in: the standard library's text, ranges and containers
 // over openkal-musl and openkal-llvm-runtime, its arguments as the runner passed them (0.29.0: the
-// Shell's, an argument with a space whole), and its status returned to the machine that ran it.
+// Shell's, an argument with a space whole; 0.29.1: runs of blanks inside one kept), and its status
+// returned to the machine that ran it.
 import std;
 
 int main(int argc, char** argv) {
