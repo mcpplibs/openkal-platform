@@ -168,7 +168,9 @@ arguments, caught its exception, read DOS's `PATH` and returned 7.
 Platform 0.29.0 and 0.29.1 require mcpp 2026.11.16.1. Every runner here that boots a
 machine is enabled on request: the UEFI row's (QEMU and OVMF), the DOS row's
 (DOSBox Staging), and, new, the hosted rows' runners on another system. FreeBSD
-programs run in the FreeBSD virtual machine of xim's disk image packages, and
+programs run in the FreeBSD virtual machine of xim's disk image packages (0.29.1:
+`freebsd-disk-image` 14.5-1, whose profile runs the command in the directory of
+the files a run delivers, `mcpp run --file`), and
 an `x86_64-windows-musl` program runs through Wine on an x86_64 Linux machine.
 Each fetches a machine image or an emulator, or makes a prefix in the home
 directory, on its first use, so `mcpp run` names the runner and how to enable it
