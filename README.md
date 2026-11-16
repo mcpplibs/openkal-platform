@@ -165,6 +165,29 @@ builds openkal-run's core runner as a program of the DOS row below, with the
 image in its `.oke` section. Measured under DOSBox Staging: the image sorted its
 arguments, caught its exception, read DOS's `PATH` and returned 7.
 
+Platform 0.29.0 requires mcpp 2026.11.16.1. Every runner here that boots a
+machine is enabled on request: the UEFI row's (QEMU and OVMF), the DOS row's
+(DOSBox Staging), and, new, the hosted rows' runners on another system. FreeBSD
+programs run in the FreeBSD virtual machine of xim's disk image packages, and
+an `x86_64-windows-musl` program runs through Wine on an x86_64 Linux machine.
+Each fetches a machine image or an emulator, or makes a prefix in the home
+directory, on its first use, so `mcpp run` names the runner and how to enable it
+until a project or this machine does:
+
+```toml
+[target.x86_64-freebsd-musl]
+platform = "openkal-platform@0.29.0"
+runner   = { enabled = true }
+```
+
+The UEFI runner passes the program's arguments (`--`, with ovmf 9.2.4-3's Shell
+profile, whose arguments dirun 0.5.0 quotes for the Shell, so one with a blank
+arrives whole), and openkal-uefi 0.11.0 implements `openkal.fs` over the firmware's
+file system and `openkal.random` over its RNG protocol, beneath openkal-musl
+0.29.8. okrun is a host for `macos-x86_64` (the release build of openkal-macos
+0.23.4 links) and `linux-i686` (built as `i686-linux-musl`), so `--systems all`
+carries both.
+
 A project overrides any group under `[target.<selector>]`, for example
 `[target.'cfg(platform = "openkal")'.layers] "c++-abi" = false`, and selects
 another platform, or none, with `platform = "..."` or `--platform`.
@@ -263,7 +286,8 @@ with `import std`:
 
 ```toml
 [target.x86_64-uefi]
-platform = "openkal-platform@0.28.0"
+platform = "openkal-platform@0.29.0"
+runner   = { enabled = true }
 ```
 
 The row is PE. mcpp 2026.11.13.1 realises the C environment by the container, as

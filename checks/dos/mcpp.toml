@@ -10,3 +10,5 @@ main = "src/main.cpp"
 
 [target.i686-dos-musl]
 platform = { path = "../.." }
+# The runner boots a machine on its first use and is enabled by the project (0.29.0).
+runner   = { enabled = true }

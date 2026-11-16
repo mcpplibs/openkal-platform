@@ -4,3 +4,4 @@ mcpp.lock
 checks/*/*.log
 checks/*/*.err
 checks/*/*.json
+__pycache__/

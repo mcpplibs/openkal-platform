@@ -2,6 +2,11 @@ name: CI
 
 # What this workflow asserts about openkal-platform.
 #
+#   resolves    every member the platform names, and every xim package a
+#               runner requires, is listed in the indexes mcpp reads (the
+#               published artifacts, not the index repositories' main); the
+#               other jobs need it, so a package not yet indexed is one
+#               failure that names it rather than one per job
 #   tests       `mcpp test` on the platform package: the test image runs on the
 #               machine's architecture and is built for the other one
 #   image       a project that declares nothing builds, runs and packs an ok
@@ -41,12 +46,48 @@ on:
 
 env:
   MCPP_SOURCE_REF: ${{ github.event.inputs.mcpp_ref || vars.MCPP_SOURCE_REF || '' }}
-  MCPP_VERSION: 2026.11.14.1
+  MCPP_VERSION: 2026.11.16.1
   XLINGS_VERSION: v2026.10.26.1
   XLINGS_NON_INTERACTIVE: '1'
 
 jobs:
+  resolves:
+    name: every member is in the index mcpp reads
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings and mcpp
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
+            | bash -s "$XLINGS_VERSION"
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+          for attempt in 1 2 3 4 5 6; do
+            xlings update > /dev/null 2>&1 || true
+            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
+            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
+            sleep 60
+          done
+          mcpp --version
+          mcpp self config --mirror GLOBAL
+
+      - name: Every member and runner package is in the indexes mcpp reads
+        run: |
+          mcpp index update
+          mcpp index status | tee status.log
+          synced=$(awk '$1 == "mcpplibs" { print $NF }' status.log)
+          xim=$(awk '$1 == "xim" { print $NF }' status.log)
+          [ -d "$synced" ] || { echo "::error::mcpp names no synced copy of the mcpplibs index"; exit 1; }
+          [ -d "$xim" ] || { echo "::error::mcpp names no synced copy of the xim index"; exit 1; }
+          python3 tools/family_release.py visible "$synced" --xim "$xim" | tee -a "$GITHUB_STEP_SUMMARY"
+
   platform:
+    needs: resolves
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -233,6 +274,7 @@ jobs:
   # itself: the hosted program, and the specification's conformance suite through
   # the platform, over the implementation at the group's version.
   i686:
+    needs: resolves
     name: i686-linux-musl (built and run on Linux x86_64)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -282,6 +324,7 @@ jobs:
             || { echo "::error::an observation did not hold on i686-linux-musl"; exit 1; }
 
   uefi:
+    needs: resolves
     name: x86_64-uefi (built on Linux x86_64, run under OVMF)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -312,10 +355,10 @@ jobs:
         working-directory: checks/uefi
         run: |
           set +e
-          mcpp run --release --target x86_64-uefi | tee run.log
+          mcpp run --release --target x86_64-uefi -- one "two three" | tee run.log
           status=${PIPESTATUS[0]}
           set -e
-          grep -q "uefi ok: \[1, 2, 3\] 1" run.log || { echo "::error::the application's output"; exit 1; }
+          grep -q 'uefi ok: \[1, 2, 3\] \["one", "two three"\]' run.log || { echo "::error::the application's output or arguments"; exit 1; }
           [ "$status" -eq 42 ] || { echo "::error::the application returned $status, not 42"; exit 1; }
           p=$(find target/x86_64-uefi -path '*bin/uefi.efi' -type f | head -1)
           file "$p"
@@ -326,6 +369,7 @@ jobs:
   # checks/i386 in both modes, checked by okld, and run by okrun built for
   # i686-linux-musl from the openkal-image release this group names.
   i686-openkal:
+    needs: resolves
     name: i686-openkal (an ok image of i386, run on Linux x86_64)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -387,6 +431,7 @@ jobs:
   # run by the provider's runner, dirun with DOSBox Staging; and the i386 ok
   # image packed as one DOS program, the core runner carrying it, and run there.
   dos:
+    needs: resolves
     name: i686-dos-musl (built on Linux x86_64, run under DOSBox Staging)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -449,6 +494,7 @@ jobs:
           [ "$status" -eq 7 ] || { echo "::error::the carried image returned $status, not 7"; exit 1; }
 
   freebsd:
+    needs: resolves
     name: freebsd (built for x86_64 and aarch64, run in a VM)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
