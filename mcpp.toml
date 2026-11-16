@@ -421,4 +421,4 @@ openkal-tools        = "0.6.4"
 openkal-tools = { version = "0.6.4", tools = ["okld"] }
 
 [build-dependencies.mcpp]
-plugins = { version = "0.22.0", features = ["plugins-platform"], host-module = true }
+plugins = { version = "0.22.1", features = ["plugins-platform"], host-module = true }
