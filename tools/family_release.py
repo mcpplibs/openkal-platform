@@ -13,6 +13,10 @@ mcpp-index it is given.
   index DIR          adds the members the index lacks to the mcpp-index
                      checkout DIR: the whole group as one change, the content
                      of its one index PR
+  visible DIR        whether the copy of the index mcpp synced into DIR (the
+                     path `mcpp index status` names) lists every member the
+                     platform names; the platform itself is the package
+                     built, not one resolved
   defects            the open issues of each member's repository, for the
                      release notes
   exports OLD NEW    builds one image with the platform at OLD and at NEW and
@@ -145,6 +149,26 @@ def index(members, checkout):
     return 0
 
 
+def visible(members, synced):
+    rows, missing = [], []
+    for name, version in members.items():
+        if name == "openkal-platform":
+            continue
+        path = synced / "pkgs/o" / f"{name}.lua"
+        text = path.read_text(encoding="utf-8") if path.is_file() else ""
+        state = "listed" if listed(text, version) else "not listed"
+        if state != "listed":
+            missing.append(f"{name} {version}")
+        rows.append((name, version, state))
+    print("| member | version | in the index mcpp reads |\n|---|---|---|")
+    for row in rows:
+        print("| {} | {} | {} |".format(*row))
+    if missing:
+        print(f"the index mcpp reads ({synced}) lacks {', '.join(missing)}: a member is indexed, and the "
+              "index artifact published, before the platform that names it", file=sys.stderr)
+    return 1 if missing else 0
+
+
 def defects(members):
     seen = set()
     print("## Open issues of the group's repositories\n")
@@ -208,6 +232,8 @@ def main():
     sub.add_parser("check")
     p = sub.add_parser("index")
     p.add_argument("checkout", type=Path)
+    p = sub.add_parser("visible")
+    p.add_argument("synced", type=Path)
     sub.add_parser("defects")
     p = sub.add_parser("exports")
     p.add_argument("old", help="openkal-platform@<version> released before")
@@ -221,6 +247,8 @@ def main():
         return check(members)
     if args.command == "index":
         return index(members, args.checkout.resolve())
+    if args.command == "visible":
+        return visible(members, args.synced.resolve())
     if args.command == "defects":
         return defects(members)
     return exports(args.old, args.new, args.mcpp, args.target, args.nm)
