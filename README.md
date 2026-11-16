@@ -180,8 +180,9 @@ platform = "openkal-platform@0.29.0"
 runner   = { enabled = true }
 ```
 
-The UEFI runner passes the program's arguments (`--`, with ovmf 9.2.4-2's Shell
-profile), and openkal-uefi 0.11.0 implements `openkal.fs` over the firmware's
+The UEFI runner passes the program's arguments (`--`, with ovmf 9.2.4-3's Shell
+profile, whose arguments dirun 0.5.0 quotes for the Shell, so one with a blank
+arrives whole), and openkal-uefi 0.11.0 implements `openkal.fs` over the firmware's
 file system and `openkal.random` over its RNG protocol, beneath openkal-musl
 0.29.8. okrun is a host for `macos-x86_64` (the release build of openkal-macos
 0.23.4 links) and `linux-i686` (built as `i686-linux-musl`), so `--systems all`
