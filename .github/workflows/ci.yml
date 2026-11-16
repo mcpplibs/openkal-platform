@@ -2,10 +2,11 @@ name: CI
 
 # What this workflow asserts about openkal-platform.
 #
-#   resolves    every member the platform names is listed in the index mcpp
-#               reads (the published artifact, not mcpp-index's main); the
-#               other jobs need it, so a member not yet indexed is one failure
-#               that names it rather than one per job
+#   resolves    every member the platform names, and every xim package a
+#               runner requires, is listed in the indexes mcpp reads (the
+#               published artifacts, not the index repositories' main); the
+#               other jobs need it, so a package not yet indexed is one
+#               failure that names it rather than one per job
 #   tests       `mcpp test` on the platform package: the test image runs on the
 #               machine's architecture and is built for the other one
 #   image       a project that declares nothing builds, runs and packs an ok
@@ -75,13 +76,15 @@ jobs:
           mcpp --version
           mcpp self config --mirror GLOBAL
 
-      - name: Every member is in the index mcpp reads
+      - name: Every member and runner package is in the indexes mcpp reads
         run: |
           mcpp index update
           mcpp index status | tee status.log
           synced=$(awk '$1 == "mcpplibs" { print $NF }' status.log)
+          xim=$(awk '$1 == "xim" { print $NF }' status.log)
           [ -d "$synced" ] || { echo "::error::mcpp names no synced copy of the mcpplibs index"; exit 1; }
-          python3 tools/family_release.py visible "$synced" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ -d "$xim" ] || { echo "::error::mcpp names no synced copy of the xim index"; exit 1; }
+          python3 tools/family_release.py visible "$synced" --xim "$xim" | tee -a "$GITHUB_STEP_SUMMARY"
 
   platform:
     needs: resolves

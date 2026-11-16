@@ -13,10 +13,13 @@ mcpp-index it is given.
   index DIR          adds the members the index lacks to the mcpp-index
                      checkout DIR: the whole group as one change, the content
                      of its one index PR
-  visible DIR        whether the copy of the index mcpp synced into DIR (the
+  visible DIR [--xim XDIR]
+                     whether the copy of the index mcpp synced into DIR (the
                      path `mcpp index status` names) lists every member the
                      platform names; the platform itself is the package
-                     built, not one resolved
+                     built, not one resolved. With --xim, also whether the
+                     xim index copy XDIR lists every `xim:<name>@<version>` a
+                     runner of the platform requires
   defects            the open issues of each member's repository, for the
                      release notes
   exports OLD NEW    builds one image with the platform at OLD and at NEW and
@@ -149,7 +152,33 @@ def index(members, checkout):
     return 0
 
 
-def visible(members, synced):
+def runner_requires():
+    """Every `xim:<name>@<version>` a runner of mcpp.toml requires, in order, once each."""
+    out = []
+    def walk(node):
+        if isinstance(node, dict):
+            runner = node.get("runner")
+            if isinstance(runner, dict):
+                for spec in runner.get("requires", []):
+                    if spec.startswith("xim:") and "@" in spec and spec not in out:
+                        out.append(spec)
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+    walk(tomllib.loads((ROOT / "mcpp.toml").read_text(encoding="utf-8")))
+    return out
+
+
+def xim_listed(xim, name, version):
+    """Whether the xim index copy `xim` has a `["<version>"]` entry for package `name`."""
+    path = xim / "pkgs" / name[0] / f"{name}.lua"
+    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    return re.search(r'\["' + re.escape(version) + r'"\]\s*=\s*\{', text) is not None
+
+
+def visible(members, synced, xim=None):
     rows, missing = [], []
     for name, version in members.items():
         if name == "openkal-platform":
@@ -160,12 +189,18 @@ def visible(members, synced):
         if state != "listed":
             missing.append(f"{name} {version}")
         rows.append((name, version, state))
+    for spec in runner_requires() if xim else []:
+        name, version = spec[len("xim:"):].split("@", 1)
+        state = "listed" if xim_listed(xim, name, version) else "not listed"
+        if state != "listed":
+            missing.append(spec)
+        rows.append((spec, version, state))
     print("| member | version | in the index mcpp reads |\n|---|---|---|")
     for row in rows:
         print("| {} | {} | {} |".format(*row))
     if missing:
-        print(f"the index mcpp reads ({synced}) lacks {', '.join(missing)}: a member is indexed, and the "
-              "index artifact published, before the platform that names it", file=sys.stderr)
+        print(f"the indexes mcpp reads lack {', '.join(missing)}: a member or a runner's package is "
+              "indexed, and the index artifact published, before the platform that names it", file=sys.stderr)
     return 1 if missing else 0
 
 
@@ -234,6 +269,7 @@ def main():
     p.add_argument("checkout", type=Path)
     p = sub.add_parser("visible")
     p.add_argument("synced", type=Path)
+    p.add_argument("--xim", type=Path, default=None, help="the xim index copy mcpp synced")
     sub.add_parser("defects")
     p = sub.add_parser("exports")
     p.add_argument("old", help="openkal-platform@<version> released before")
@@ -248,7 +284,7 @@ def main():
     if args.command == "index":
         return index(members, args.checkout.resolve())
     if args.command == "visible":
-        return visible(members, args.synced.resolve())
+        return visible(members, args.synced.resolve(), args.xim.resolve() if args.xim else None)
     if args.command == "defects":
         return defects(members)
     return exports(args.old, args.new, args.mcpp, args.target, args.nm)
