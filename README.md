@@ -165,7 +165,13 @@ builds openkal-run's core runner as a program of the DOS row below, with the
 image in its `.oke` section. Measured under DOSBox Staging: the image sorted its
 arguments, caught its exception, read DOS's `PATH` and returned 7.
 
-Platform 0.29.0 and 0.29.1 require mcpp 2026.11.16.1. Every runner here that boots a
+Platform 0.29.2 is 0.29.1 with two members corrected, found by running a shell's
+whole script on the UEFI and DOS rows: openkal-uefi 0.11.2 (on the release
+profile a directory listing gave `f2.` for `f2.txt` and a rename was refused) and
+openkal-musl 0.29.9 (`chdir` left the previous directory's handle open, and DOS
+has 32; `/name` beneath a volume reached no directory).
+
+Platform 0.29.0 to 0.29.2 require mcpp 2026.11.16.1. Every runner here that boots a
 machine is enabled on request: the UEFI row's (QEMU and OVMF), the DOS row's
 (DOSBox Staging), and, new, the hosted rows' runners on another system. FreeBSD
 programs run in the FreeBSD virtual machine of xim's disk image packages (0.29.1:
@@ -178,7 +184,7 @@ until a project or this machine does:
 
 ```toml
 [target.x86_64-freebsd-musl]
-platform = "openkal-platform@0.29.1"
+platform = "openkal-platform@0.29.2"
 runner   = { enabled = true }
 ```
 
@@ -290,7 +296,7 @@ with `import std`:
 
 ```toml
 [target.x86_64-uefi]
-platform = "openkal-platform@0.29.1"
+platform = "openkal-platform@0.29.2"
 runner   = { enabled = true }
 ```
 
@@ -325,7 +331,7 @@ run-time over openkal-dos, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-dos-musl]
-platform = "openkal-platform@0.29.1"
+platform = "openkal-platform@0.29.2"
 ```
 
 The row is TECHNICAL EXPERIMENT ONLY (openkal-dos's README). A program is the
