@@ -165,6 +165,12 @@ builds openkal-run's core runner as a program of the DOS row below, with the
 image in its `.oke` section. Measured under DOSBox Staging: the image sorted its
 arguments, caught its exception, read DOS's `PATH` and returned 7.
 
+Platform 0.30.1 takes openkal-macos 0.23.5: the private parts of fork in
+libSystem are bound weakly and called where the library exports them, so a
+program of `x86_64-macos-musl` starts on a Darwin whose system library lacks
+them (measured in PureDarwin, xnu with no macOS above it). Rows and keys are
+unchanged.
+
 Platform 0.30.0 adds a row and a member: `i686-svr4-musl`, programs of UNIX
 System V Release 4 and its descendants on i386, over openkal-svr4 0.1.0 (below).
 In openkal-musl 0.29.10 and openkal-llvm-runtime 0.20.4 a system they do not know

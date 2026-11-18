@@ -12,7 +12,7 @@
 [package]
 namespace   = "mcpplibs"
 name        = "openkal-platform"
-version     = "0.30.0"
+version     = "0.30.1"
 description = "The platform of ok images (<arch>-openkal): their toolchain, C library and C++ run-time, tools, compile and link conventions, seal, runner and carrier, as one versioned statement mcpp reads."
 license     = "Apache-2.0"
 authors     = ["mcpplibs"]
@@ -451,7 +451,9 @@ runner = { cmd = ["unshare", "-Ur", "{pkg:ibcs-us}/bin/ibcs-us", "{}"], hosts = 
 # volume's root); 0.30.0, openkal-svr4 0.1.0 (System V Release 4 on i386, the
 # `kernel-abi' layer of its row) with openkal-musl 0.29.10 and openkal-llvm-runtime
 # 0.20.4, in which a system they do not know takes the general selections, where
-# the selections named systems. From 0.24.1 the members name one another by
+# the selections named systems; 0.30.1, openkal-macos 0.23.5 (a part of fork the
+# system library does not export is not called, so a program starts on a Darwin
+# whose libSystem lacks the private ones: PureDarwin). From 0.24.1 the members name one another by
 # compatible ranges (`^0.28.0`) and this group chooses the versions: mcpp
 # 2026.11.7.1 resolves within it, and a fix of one member is that member's
 # release and a patch of this group, released together through one index change
@@ -459,7 +461,7 @@ runner = { cmd = ["unshare", "-Ur", "{pkg:ibcs-us}/bin/ibcs-us", "{}"], hosts = 
 [platform.versions]
 openkal              = "0.25.3"
 openkal-linux        = "0.26.3"
-openkal-macos        = "0.23.4"
+openkal-macos        = "0.23.5"
 openkal-windows      = "0.21.2"
 openkal-freebsd      = "0.1.2"
 openkal-uefi         = "0.11.2"
