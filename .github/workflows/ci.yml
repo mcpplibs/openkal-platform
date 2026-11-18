@@ -493,7 +493,7 @@ jobs:
         working-directory: checks/svr4
         run: |
           # The emulator the runner installed, among the packages mcpp holds.
-          ibcs=$(find "$HOME/.mcpp" "$HOME/.xlings" -path '*xim-x-ibcs-us/*/bin/ibcs-us' -type f 2>/dev/null | sort | tail -1)
+          ibcs=$(find "$HOME/.mcpp" "$HOME/.xlings" -path '*xim-x-ibcs-us/*/bin/ibcs-us' -type f 2>/dev/null | sort | tail -1 || true)
           [ -n "$ibcs" ] || { echo "::error::ibcs-us is not installed"; exit 1; }
           p=$(find "$PWD/target/i686-svr4-musl" -path '*bin/svr4' -type f | head -1)
           for interface in per_solaris per_osr5; do
