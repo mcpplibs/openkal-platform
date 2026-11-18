@@ -165,6 +165,13 @@ builds openkal-run's core runner as a program of the DOS row below, with the
 image in its `.oke` section. Measured under DOSBox Staging: the image sorted its
 arguments, caught its exception, read DOS's `PATH` and returned 7.
 
+Platform 0.30.0 adds a row and a member: `i686-svr4-musl`, programs of UNIX
+System V Release 4 and its descendants on i386, over openkal-svr4 0.1.0 (below).
+In openkal-musl 0.29.10 and openkal-llvm-runtime 0.20.4 a system they do not know
+takes the general selections, where the selections named systems; the rows served
+before select what they selected. It requires mcpp 2026.11.17.1, from which a
+platform package states a system.
+
 Platform 0.29.2 is 0.29.1 with two members corrected, found by running a shell's
 whole script on the UEFI and DOS rows: openkal-uefi 0.11.2 (on the release
 profile a directory listing gave `f2.` for `f2.txt` and a rename was refused) and
@@ -184,7 +191,7 @@ until a project or this machine does:
 
 ```toml
 [target.x86_64-freebsd-musl]
-platform = "openkal-platform@0.29.2"
+platform = "openkal-platform@0.30.0"
 runner   = { enabled = true }
 ```
 
@@ -296,7 +303,7 @@ with `import std`:
 
 ```toml
 [target.x86_64-uefi]
-platform = "openkal-platform@0.29.2"
+platform = "openkal-platform@0.30.0"
 runner   = { enabled = true }
 ```
 
@@ -323,6 +330,43 @@ allocator reserves it, and the carrier's allocator and the image's each place a
 Measured: an image that prints, writes to standard error, throws and catches,
 carried by a 2.4 MB application, returned its status 7 under OVMF in 0.4 s.
 
+## System V programs (0.30.0)
+
+`i686-svr4-musl` is a row this platform defines and serves (`[[platform.provider]]
+name = "svr4"`): a program of the i386 kernel interface of UNIX System V Release 4
+and its descendants (UnixWare, Solaris x86, OpenServer), on the same C library
+and C++ run-time over openkal-svr4, so it is written in C++23 with `import std`:
+
+```toml
+[target.i686-svr4-musl]
+platform = "openkal-platform@0.30.0"
+runner   = { enabled = true }
+```
+
+Nothing of a system is linked or read. A program is one static ELF32 executable
+that enters the kernel through the call gate; openkal-svr4 issues the part of the
+interface the systems share, and takes an older call or reports `not supported`
+where one lacks a call. The system is this platform's statement
+(`[[platform.system]] name = "svr4"`), and the implementation is the provider's
+`kernel-abi` layer: openkal-musl names no implementation for the system. The
+row's flags are the DOS row's (`-march=i486`, emulated thread-local storage,
+unwind tables, the stack aligned to sixteen bytes), and the allocator is musl's
+own.
+
+The row has no threads (the kernel of Release 4.0 has none), no random source,
+no network, and starts no other program (openkal-svr4 0.1 claims no
+`openkal.process`). Its tier is `preview`.
+
+`mcpp run` runs the program under xim's `ibcs-us`, on a Linux x86_64 host that
+lets an unprivileged user make a user namespace. **That is an emulation of the
+interface and not a System V kernel**: it shows that the program issues the calls
+as the interface states them. Measured under it, as UnixWare 7, Solaris and
+OpenServer 5: the specification's suite conforms in every observation made (111
+held), and a C++23 program with `import std` sorted its arguments, caught an
+exception, made, renamed, listed (301 names) and removed files, and returned 7,
+unoptimised and optimised. No run on a System V kernel has been made; it needs the
+system's own media in a machine emulator.
+
 ## DOS programs (0.28.0; technical experiment only)
 
 `i686-dos-musl` is a row this platform defines and serves (`[[platform.provider]]
@@ -331,7 +375,7 @@ run-time over openkal-dos, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-dos-musl]
-platform = "openkal-platform@0.29.2"
+platform = "openkal-platform@0.30.0"
 ```
 
 The row is TECHNICAL EXPERIMENT ONLY (openkal-dos's README). A program is the
@@ -398,6 +442,7 @@ previous patch's.
 | `checks/snapshot` | a C++ program starts from a snapshot of its initialisers, and a start whose named value differs does not |
 | `checks/i386` | an ok image of i386 is built in both modes, checked by okld and run by okrun built for i686-linux-musl; packed with `--systems dos-i686`, it runs as a DOS program |
 | `checks/dos` | a program of i686-dos-musl runs in both modes under DOSBox Staging, with a 512 KiB recursion, and states a 1 MiB stack (technical experiment only) |
+| `checks/svr4` | a program of i686-svr4-musl runs in both modes under ibcs-us (an emulation of the System V i386 interface), then as Solaris and as OpenServer 5: files made, renamed, listed in parts and removed (0.30.0) |
 | family release | the group's members are tagged and mirrored, both mcpp releases resolve an image of it, and a patch removes no symbol |
 
 ## License

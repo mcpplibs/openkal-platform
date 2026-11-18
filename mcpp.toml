@@ -12,7 +12,7 @@
 [package]
 namespace   = "mcpplibs"
 name        = "openkal-platform"
-version     = "0.29.2"
+version     = "0.30.0"
 description = "The platform of ok images (<arch>-openkal): their toolchain, C library and C++ run-time, tools, compile and link conventions, seal, runner and carrier, as one versioned statement mcpp reads."
 license     = "Apache-2.0"
 authors     = ["mcpplibs"]
@@ -27,7 +27,9 @@ repo        = "https://github.com/mcpplibs/openkal-platform"
 # chosen for it when the platform lists the row with a toolchain, so the i686
 # rows below need no toolchain named by the project. 2026.11.16.1 (0.29.0): a
 # runner's `enabled', which every runner here that boots a machine states.
-mcpp        = ">=2026.11.16.1"
+# 2026.11.17.1 (0.30.0): a platform package states a system (`[[platform.system]]'),
+# which the System V row's is.
+mcpp        = ">=2026.11.17.1"
 
 [platform]
 # `i686-openkal` (0.28.0): the image of the thirty-two bit class, i386 (openkal
@@ -69,9 +71,9 @@ debuggee = ["okrun", "--debugger", "{}"]
 # The C library and the C++ run-time inside an image. A package of the graph
 # that provides a layer takes its place (`provides`), and `false` leaves it out.
 [platform.layers]
-compiler-runtime = "openkal-llvm-runtime@0.20.3"
-"c++-abi"        = "openkal-llvm-runtime@0.20.3"
-c-abi            = { name = "openkal-musl", version = "0.29.9", default-features = false, features = ["posix", "malloc-mimalloc"] }
+compiler-runtime = "openkal-llvm-runtime@0.20.4"
+"c++-abi"        = "openkal-llvm-runtime@0.20.4"
+c-abi            = { name = "openkal-musl", version = "0.29.10", default-features = false, features = ["posix", "malloc-mimalloc"] }
 
 # Built for the building machine: `okld` writes and checks the notes, `okrun`
 # runs an image, `okprof` reads what a measured run recorded (0.23.0: the
@@ -218,9 +220,9 @@ targets   = ["x86_64-linux-gnu", "aarch64-linux-gnu", "x86_64-linux-musl", "aarc
 toolchain = "llvm@23.1.3"
 
 [platform.hosted.layers]
-compiler-runtime = "openkal-llvm-runtime@0.20.3"
-"c++-abi"        = "openkal-llvm-runtime@0.20.3"
-c-abi            = { name = "openkal-musl", version = "0.29.9", default-features = false, features = ["posix", "malloc-mimalloc"] }
+compiler-runtime = "openkal-llvm-runtime@0.20.4"
+"c++-abi"        = "openkal-llvm-runtime@0.20.4"
+c-abi            = { name = "openkal-musl", version = "0.29.10", default-features = false, features = ["posix", "malloc-mimalloc"] }
 
 # THE HOSTED ROWS' RUNNERS ON ANOTHER SYSTEM (0.29.0; mcpp 2026.11.16.1 reads a
 # runner's `enabled`). A FreeBSD program runs in the FreeBSD virtual machine of
@@ -238,7 +240,7 @@ serves    = ["x86_64-freebsd-musl"]
 hosted    = true
 base      = "none"
 toolchain = "llvm@23.1.3"
-layers    = { compiler-runtime = "openkal-llvm-runtime@0.20.3", "c++-abi" = "openkal-llvm-runtime@0.20.3", c-abi = { name = "openkal-musl", version = "0.29.9", default-features = false, features = ["posix", "malloc-mimalloc"] } }
+layers    = { compiler-runtime = "openkal-llvm-runtime@0.20.4", "c++-abi" = "openkal-llvm-runtime@0.20.4", c-abi = { name = "openkal-musl", version = "0.29.10", default-features = false, features = ["posix", "malloc-mimalloc"] } }
 runner    = { cmd = ["dirun", "--profile", "{pkg:freebsd-disk-image}/dirun.toml", "--emulator", "{pkg:qemu-x86}/bin/qemu-system-x86_64", "--", "{}"], host = "any", hosts = ["linux-x86_64"], requires = ["xim:dirun@0.6.0", "xim:freebsd-disk-image@14.5-1", "xim:qemu-x86@9.2.4-1"], enabled = false }
 
 [[platform.provider]]
@@ -247,7 +249,7 @@ serves    = ["aarch64-freebsd-musl"]
 hosted    = true
 base      = "none"
 toolchain = "llvm@23.1.3"
-layers    = { compiler-runtime = "openkal-llvm-runtime@0.20.3", "c++-abi" = "openkal-llvm-runtime@0.20.3", c-abi = { name = "openkal-musl", version = "0.29.9", default-features = false, features = ["posix", "malloc-mimalloc"] } }
+layers    = { compiler-runtime = "openkal-llvm-runtime@0.20.4", "c++-abi" = "openkal-llvm-runtime@0.20.4", c-abi = { name = "openkal-musl", version = "0.29.10", default-features = false, features = ["posix", "malloc-mimalloc"] } }
 runner    = { cmd = ["dirun", "--profile", "{pkg:aarch64-freebsd-disk-image}/dirun.toml", "--var", "firmware={pkg:ovmf}/share/edk2/edk2-aarch64-code.fd", "--emulator", "{pkg:qemu-system}/bin/qemu-system-aarch64", "--", "{}"], host = "any", hosts = ["linux-x86_64"], requires = ["xim:dirun@0.6.0", "xim:aarch64-freebsd-disk-image@14.5-1", "xim:ovmf@9.2.4-4", "xim:qemu-system@9.2.4"], enabled = false }
 
 [[platform.provider]]
@@ -256,7 +258,7 @@ serves    = ["x86_64-windows-musl"]
 hosted    = true
 base      = "none"
 toolchain = "llvm@23.1.3"
-layers    = { compiler-runtime = "openkal-llvm-runtime@0.20.3", "c++-abi" = "openkal-llvm-runtime@0.20.3", c-abi = { name = "openkal-musl", version = "0.29.9", default-features = false, features = ["posix", "malloc-mimalloc"] } }
+layers    = { compiler-runtime = "openkal-llvm-runtime@0.20.4", "c++-abi" = "openkal-llvm-runtime@0.20.4", c-abi = { name = "openkal-musl", version = "0.29.10", default-features = false, features = ["posix", "malloc-mimalloc"] } }
 runner    = { cmd = ["wine", "{}"], host = "same-arch", hosts = ["linux-x86_64"], requires = ["xim:wine@11.0"], enabled = false }
 
 # The runners require dirun 0.5.0 and ovmf 9.2.4-3 (0.29.0): ovmf's profile states the UEFI
@@ -291,7 +293,7 @@ serves = ["x86_64-uefi"]
 base   = "none"
 hosted = true
 
-layers = { compiler-runtime = "openkal-llvm-runtime@0.20.3", "c++-abi" = "openkal-llvm-runtime@0.20.3", c-abi = { name = "openkal-musl", version = "0.29.9", default-features = false, features = ["posix", "malloc-mimalloc"] } }
+layers = { compiler-runtime = "openkal-llvm-runtime@0.20.4", "c++-abi" = "openkal-llvm-runtime@0.20.4", c-abi = { name = "openkal-musl", version = "0.29.10", default-features = false, features = ["posix", "malloc-mimalloc"] } }
 link   = { driver = "lld", start = "efi_main", flags = ["--subsystem", "efi_application", "--gc-sections"], exe = "{name}.efi", inputs = [{ file = "board/qemu-exit.S" }], seal = [] }
 runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:ovmf}/dirun.toml", "--emulator", "{pkg:qemu-x86}/bin/qemu-system-x86_64", "--memory", "2048", "--"], hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64"], requires = ["xim:dirun@0.6.0", "xim:qemu-x86@9.2.4-1", "xim:ovmf@9.2.4-4"], enabled = false }
 
@@ -330,9 +332,56 @@ serves = ["i686-dos-musl"]
 base   = "none"
 hosted = true
 
-layers = { compiler-runtime = "openkal-llvm-runtime@0.20.3", "c++-abi" = "openkal-llvm-runtime@0.20.3", c-abi = { name = "openkal-musl", version = "0.29.9", default-features = false, features = ["posix", "malloc-mallocng"] } }
+layers = { compiler-runtime = "openkal-llvm-runtime@0.20.4", "c++-abi" = "openkal-llvm-runtime@0.20.4", c-abi = { name = "openkal-musl", version = "0.29.10", default-features = false, features = ["posix", "malloc-mallocng"] } }
 link   = { driver = "lld", start = "okdos_entry", flags = ["-static", "--image-base=0x1000", "-z", "norelro", "-z", "stack-size=1048576", "--gc-sections", "--eh-frame-hdr"], seal = [["okdos", "seal", "{}"]] }
 runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:dosbox-staging}/dirun.toml", "--"], hosts = ["linux-x86_64", "macos-aarch64", "windows-x86_64"], requires = ["xim:dirun@0.6.0", "xim:dosbox-staging@0.83.0-2"], enabled = false }
+
+# UNIX SYSTEM V RELEASE 4 AND ITS DESCENDANTS ON i386 (0.30.0): programs of the
+# kernel's own system-call interface, on the same C library and C++ run-time over
+# openkal-svr4. Nothing of a system is linked or read: the program is one static
+# ELF32 executable that enters the kernel through the call gate, and the part of
+# the interface it issues is the one the systems share, so one executable is each
+# system's. The system is this platform's statement (`[[platform.system]]'), and
+# the implementation is the provider's `kernel-abi' layer: the C library names no
+# implementation for a system it does not know and takes the one the graph
+# provides, so a further system of this kind is a statement here and no line in
+# the C library. The flags are the i386 conventions of the DOS row above:
+# emulated thread-local storage (the kernel of Release 4.0 has no threads and the
+# row has none, so the thread pointer is no register), unwind tables for every
+# unit, the stack aligned to sixteen bytes at a call, and the 486. The allocator
+# is musl's own: the implementation states no random source.
+#
+# THE RUNNER IS AN EMULATION OF THE INTERFACE, NOT A SYSTEM: xim's `ibcs-us'
+# (ibcs-us 4.3 built with corrections) on Linux x86_64, in a user namespace, where
+# it has the identity it asks for. It answers as UnixWare 7 for these executables,
+# and as Solaris or OpenServer 5 when told (`-p'). What a run under it shows is
+# that the program issues the calls as the interface states them; a run on a
+# System V kernel needs the system's own media and is not this runner's. A
+# program that replaces its image leaves the emulation, so openkal-svr4 0.1 claims
+# no `openkal.process' and the row starts no other program. The tier is `preview'.
+[[platform.system]]
+name = "svr4"
+
+[[platform.define]]
+triple        = "i686-svr4-musl"
+clang-triple  = "i386-unknown-none-elf"
+object-format = "elf"
+family        = "unix"
+data-model    = "ilp32"
+execution     = "svr4"
+tier          = "preview"
+march         = "i486"
+flags         = ["-femulated-tls", "-fasynchronous-unwind-tables", "-mstack-alignment=16", "-ffunction-sections", "-fdata-sections"]
+
+[[platform.provider]]
+name   = "svr4"
+serves = ["i686-svr4-musl"]
+base   = "none"
+hosted = true
+
+layers = { "kernel-abi" = { name = "openkal-svr4", version = "0.1.0", features = ["standalone"] }, compiler-runtime = "openkal-llvm-runtime@0.20.4", "c++-abi" = "openkal-llvm-runtime@0.20.4", c-abi = { name = "openkal-musl", version = "0.29.10", default-features = false, features = ["posix", "malloc-mallocng"] } }
+link   = { driver = "lld", flags = ["-static", "-z", "norelro", "--gc-sections", "--eh-frame-hdr"] }
+runner = { cmd = ["unshare", "-Ur", "{pkg:ibcs-us}/bin/ibcs-us", "{}"], hosts = ["linux-x86_64"], requires = ["xim:ibcs-us@4.3-1"], enabled = false }
 
 # The family released together for openkal 0.17 (the 0.17.2 round: okb, the
 # runner's bundle and library interfaces, musl's renameat2; the 0.17.3 round:
@@ -399,7 +448,10 @@ runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:dosbox-staging}
 # openkal-uefi 0.11.2 (compiled with `-fno-builtin': on the release profile a
 # listing shortened names and a rename was refused) and openkal-musl 0.29.9
 # (`chdir' releases the handle before it; `/name' beneath a volume is that
-# volume's root). From 0.24.1 the members name one another by
+# volume's root); 0.30.0, openkal-svr4 0.1.0 (System V Release 4 on i386, the
+# `kernel-abi' layer of its row) with openkal-musl 0.29.10 and openkal-llvm-runtime
+# 0.20.4, in which a system they do not know takes the general selections, where
+# the selections named systems. From 0.24.1 the members name one another by
 # compatible ranges (`^0.28.0`) and this group chooses the versions: mcpp
 # 2026.11.7.1 resolves within it, and a fix of one member is that member's
 # release and a patch of this group, released together through one index change
@@ -413,8 +465,9 @@ openkal-freebsd      = "0.1.2"
 openkal-uefi         = "0.11.2"
 openkal-dos          = "0.1.1"
 openkal-dos-tools    = "0.1.1"
-openkal-musl         = "0.29.9"
-openkal-llvm-runtime = "0.20.3"
+openkal-svr4         = "0.1.0"
+openkal-musl         = "0.29.10"
+openkal-llvm-runtime = "0.20.4"
 openkal-ld           = "0.6.4"
 openkal-run          = "0.6.4"
 openkal-tools        = "0.6.4"

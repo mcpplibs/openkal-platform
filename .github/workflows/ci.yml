@@ -19,6 +19,8 @@ name: CI
 #   i686-openkal  the ok image of i386, run by okrun built for i686-linux-musl
 #   dos         a DOS program, and the i386 image carried as one (technical
 #               experiment only), run under DOSBox Staging through dirun
+#   svr4        a System V Release 4 program (i386), run under ibcs-us, an
+#               emulation of the kernel's interface, as each of its three interfaces
 #   freebsd     the musl rows of FreeBSD are built here and run in a FreeBSD VM,
 #               with okrun built for them running an ok image there
 #
@@ -46,7 +48,7 @@ on:
 
 env:
   MCPP_SOURCE_REF: ${{ github.event.inputs.mcpp_ref || vars.MCPP_SOURCE_REF || '' }}
-  MCPP_VERSION: 2026.11.16.1
+  MCPP_VERSION: 2026.11.18.1
   XLINGS_VERSION: v2026.10.26.1
   XLINGS_NON_INTERACTIVE: '1'
 
@@ -425,6 +427,81 @@ jobs:
             grep -q 'i386 ok: \["one", "two"\]' run.log && grep -q 'caught: across a frame' run.log \
               || { echo "::error::the image's output ($mode)"; exit 1; }
             [ "$status" -eq 7 ] || { echo "::error::the image returned $status, not 7 ($mode)"; exit 1; }
+          done
+
+  # System V Release 4 on i386 (0.30.0): a program of i686-svr4-musl (openkal-musl
+  # over openkal-svr4) built in both modes and run by the provider's runner,
+  # ibcs-us in a user namespace; then the same executable under the two other
+  # interfaces the emulation has. The runs are under an emulation of the
+  # interface on Linux x86_64, none on a System V kernel.
+  svr4:
+    needs: resolves
+    name: i686-svr4-musl (built on Linux x86_64, run under ibcs-us)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings and mcpp
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
+            | bash -s "$XLINGS_VERSION"
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+          for attempt in 1 2 3 4 5 6; do
+            xlings update > /dev/null 2>&1 || true
+            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
+            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
+            sleep 60
+          done
+          mcpp --version
+          mcpp self config --mirror GLOBAL
+
+      # ibcs-us asks for the root identity and has it in a user namespace; a
+      # runner image whose AppArmor refuses an unprivileged one is told to allow it.
+      - name: The host lets an unprivileged user make a user namespace
+        run: |
+          if ! unshare -Ur true 2>/dev/null; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          unshare -Ur true
+
+      - name: The System V program (dev and release)
+        working-directory: checks/svr4
+        run: |
+          for mode in "" --release; do
+            set +e
+            mcpp run --target i686-svr4-musl $mode -- two one | tee run.log
+            status=${PIPESTATUS[0]}
+            set -e
+            grep -q 'svr4 ok: \["one", "two"\]' run.log && grep -q 'caught: across a frame' run.log \
+              && grep -q 'files: true' run.log && grep -q 'here: true' run.log \
+              || { echo "::error::the System V program's output ($mode)"; exit 1; }
+            [ "$status" -eq 7 ] || { echo "::error::the System V program returned $status, not 7 ($mode)"; exit 1; }
+          done
+          p=$(find target/i686-svr4-musl -path '*bin/svr4' -type f | head -1)
+          file "$p"
+          file "$p" | grep -q 'ELF 32-bit LSB executable, Intel 80386.*statically linked' \
+            || { echo "::error::the program is not a static ELF32 i386 executable"; exit 1; }
+
+      # The same executable under the interfaces the emulation is told to answer
+      # as: the part of the interface the program issues is the one they share.
+      - name: The same executable as Solaris and as OpenServer 5
+        working-directory: checks/svr4
+        run: |
+          ibcs=$(mcpp self env --target i686-svr4-musl --format json \
+            | python3 -c 'import json,sys; print(next(a for a in json.load(sys.stdin)["data"]["runner"]["argv"] if a.endswith("/ibcs-us")))')
+          p=$(find "$PWD/target/i686-svr4-musl" -path '*bin/svr4' -type f | head -1)
+          for interface in per_solaris per_osr5; do
+            set +e
+            unshare -Ur "$ibcs" -p "$interface" "$p" two one | tee "$interface.log"
+            status=${PIPESTATUS[0]}
+            set -e
+            grep -q 'files: true' "$interface.log" || { echo "::error::the program's output under $interface"; exit 1; }
+            [ "$status" -eq 7 ] || { echo "::error::the program returned $status under $interface, not 7"; exit 1; }
           done
 
   # DOS (0.28.0; technical experiment only): a program of i686-dos-musl
