@@ -492,8 +492,9 @@ jobs:
       - name: The same executable as Solaris and as OpenServer 5
         working-directory: checks/svr4
         run: |
-          ibcs=$(mcpp self env --target i686-svr4-musl --format json \
-            | python3 -c 'import json,sys; print(next(a for a in json.load(sys.stdin)["data"]["runner"]["argv"] if a.endswith("/ibcs-us")))')
+          # The emulator the runner installed, beside the other packages of mcpp's registry.
+          ibcs=$(find "$HOME/.mcpp/registry/data/xpkgs" -path '*ibcs-us*/bin/ibcs-us' -type f | sort | tail -1)
+          [ -n "$ibcs" ] || { echo "::error::ibcs-us is not installed"; exit 1; }
           p=$(find "$PWD/target/i686-svr4-musl" -path '*bin/svr4' -type f | head -1)
           for interface in per_solaris per_osr5; do
             set +e
