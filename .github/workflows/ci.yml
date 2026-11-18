@@ -63,20 +63,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install xlings and mcpp
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
-            | bash -s "$XLINGS_VERSION"
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
-          for attempt in 1 2 3 4 5 6; do
-            xlings update > /dev/null 2>&1 || true
-            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
-            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
-            sleep 60
-          done
-          mcpp --version
-          mcpp self config --mirror GLOBAL
+      - uses: mcpp-community/setup-mcpp@v1
+        with:
+          version: ${{ env.MCPP_VERSION }}
+          xlings-version: ${{ env.XLINGS_VERSION }}
 
       - name: Every member and runner package is in the indexes mcpp reads
         run: |
@@ -286,20 +276,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install xlings and mcpp
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
-            | bash -s "$XLINGS_VERSION"
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
-          for attempt in 1 2 3 4 5 6; do
-            xlings update > /dev/null 2>&1 || true
-            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
-            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
-            sleep 60
-          done
-          mcpp --version
-          mcpp self config --mirror GLOBAL
+      - uses: mcpp-community/setup-mcpp@v1
+        with:
+          version: ${{ env.MCPP_VERSION }}
+          xlings-version: ${{ env.XLINGS_VERSION }}
 
       - name: The hosted program, thirty-two bit
         working-directory: checks/hosted
@@ -336,20 +316,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install xlings and mcpp
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
-            | bash -s "$XLINGS_VERSION"
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
-          for attempt in 1 2 3 4 5 6; do
-            xlings update > /dev/null 2>&1 || true
-            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
-            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
-            sleep 60
-          done
-          mcpp --version
-          mcpp self config --mirror GLOBAL
+      - uses: mcpp-community/setup-mcpp@v1
+        with:
+          version: ${{ env.MCPP_VERSION }}
+          xlings-version: ${{ env.XLINGS_VERSION }}
 
       # The provider's runner: dirun, xim's OVMF with its profile, and QEMU, installed by the
       # first run; the status returns through the board's exit.
@@ -382,20 +352,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install xlings and mcpp
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
-            | bash -s "$XLINGS_VERSION"
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
-          for attempt in 1 2 3 4 5 6; do
-            xlings update > /dev/null 2>&1 || true
-            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
-            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
-            sleep 60
-          done
-          mcpp --version
-          mcpp self config --mirror GLOBAL
+      - uses: mcpp-community/setup-mcpp@v1
+        with:
+          version: ${{ env.MCPP_VERSION }}
+          xlings-version: ${{ env.XLINGS_VERSION }}
 
       - name: okrun for i686-linux-musl
         run: |
@@ -445,20 +405,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install xlings and mcpp
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
-            | bash -s "$XLINGS_VERSION"
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
-          for attempt in 1 2 3 4 5 6; do
-            xlings update > /dev/null 2>&1 || true
-            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
-            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
-            sleep 60
-          done
-          mcpp --version
-          mcpp self config --mirror GLOBAL
+      - uses: mcpp-community/setup-mcpp@v1
+        with:
+          version: ${{ env.MCPP_VERSION }}
+          xlings-version: ${{ env.XLINGS_VERSION }}
 
       # ibcs-us asks for the root identity and has it in a user namespace; a
       # runner image whose AppArmor refuses an unprivileged one is told to allow it.
@@ -520,20 +470,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install xlings and mcpp
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
-            | bash -s "$XLINGS_VERSION"
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
-          for attempt in 1 2 3 4 5 6; do
-            xlings update > /dev/null 2>&1 || true
-            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
-            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
-            sleep 60
-          done
-          mcpp --version
-          mcpp self config --mirror GLOBAL
+      - uses: mcpp-community/setup-mcpp@v1
+        with:
+          version: ${{ env.MCPP_VERSION }}
+          xlings-version: ${{ env.XLINGS_VERSION }}
 
       - name: The DOS program (dev and release)
         working-directory: checks/dos
@@ -597,20 +537,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install xlings and mcpp
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh \
-            | bash -s "$XLINGS_VERSION"
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
-          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
-          for attempt in 1 2 3 4 5 6; do
-            xlings update > /dev/null 2>&1 || true
-            if xlings install "mcpp@$MCPP_VERSION" -y -g; then break; fi
-            [ "$attempt" = 6 ] && { echo "::error::mcpp could not be installed"; exit 1; }
-            sleep 60
-          done
-          mcpp --version
-          mcpp self config --mirror GLOBAL
+      - uses: mcpp-community/setup-mcpp@v1
+        with:
+          version: ${{ env.MCPP_VERSION }}
+          xlings-version: ${{ env.XLINGS_VERSION }}
 
       - name: The musl rows, built for FreeBSD
         working-directory: checks/hosted
