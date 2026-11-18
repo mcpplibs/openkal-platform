@@ -1,0 +1,15 @@
+# A program of UNIX System V Release 4 on i386 (0.30.0): C++23 over the family's C library and
+# C++ run-time over openkal-svr4, run under ibcs-us, an emulation of the kernel's interface on
+# Linux x86_64. The platform is the directory above.
+[package]
+name    = "svr4"
+version = "0.1.0"
+
+[targets.svr4]
+kind = "bin"
+main = "src/main.cpp"
+
+[target.i686-svr4-musl]
+platform = { path = "../.." }
+# The runner installs an emulator on its first use and is enabled by the project.
+runner   = { enabled = true }

@@ -30,6 +30,11 @@ mcpp-index it is given.
                      every object that calls it holds its own copy, and it is
                      not compared
 
+`--review` states that the platform is the working tree under review: its tag
+follows the merge, so `check` reports it as `under review` and `index` leaves
+its entry to the release. A platform is given to `exports` as
+`openkal-platform@<version>` or as a directory, the working tree.
+
 Network reads use GITHUB_TOKEN when it is set.
 """
 import argparse
@@ -93,7 +98,10 @@ def listed(descriptor, version):
     return m.group(1) if m else None
 
 
-def check(members):
+PLATFORM = "openkal-platform"
+
+
+def check(members, review=False):
     rows, problems = [], 0
     digests = {}
     for name, version in members.items():
@@ -111,6 +119,8 @@ def check(members):
         indexed = listed(descriptor, version)
         state = ("no tag" if a is None else "no mirror" if b is None else "mirror differs" if a != b
                  else "indexed" if indexed == a else "index differs" if indexed else "not indexed")
+        if review and name == PLATFORM and state == "no tag":
+            state = "under review"
         problems += state in ("no tag", "no mirror", "mirror differs", "index differs")
         rows.append((name, version, state, a or "-"))
     print("| member | version | state | sha256 |\n|---|---|---|---|")
@@ -129,7 +139,7 @@ def entry(version, github, gitcode, sha):
             f'            }},\n')
 
 
-def index(members, checkout):
+def index(members, checkout, review=False):
     added = []
     for name, version in members.items():
         path = checkout / "pkgs/o" / f"{name}.lua"
@@ -138,6 +148,9 @@ def index(members, checkout):
             continue
         github, gitcode = urls(name, version)
         data, mirror = fetch(github), fetch(gitcode)
+        if review and name == PLATFORM and not data:
+            print(f"left to the release: {name} {version}, whose tag follows the merge")
+            continue
         if not data or not mirror or hashlib.sha256(data).digest() != hashlib.sha256(mirror).digest():
             sys.exit(f"{name} {version}: the tag or its mirror is missing, or they differ; run `check`")
         sha = hashlib.sha256(data).hexdigest()
@@ -225,13 +238,17 @@ def defects(members):
 
 
 def symbols(mcpp, platform, target, work, nm):
-    project = work / platform.replace("@", "-")
+    # A released platform is named; the one under review is its working tree.
+    tree = Path(platform)
+    named = f'"{platform}"' if "@" in platform and not tree.is_dir() else f'{{ path = "{tree.resolve().as_posix()}" }}'
+    project = work / ("released" if named.startswith('"') else "review")
     (project / "src").mkdir(parents=True, exist_ok=True)
-    (project / "mcpp.toml").write_text('[package]\nname = "exports"\nversion = "0.1.0"\n', encoding="utf-8")
+    (project / "mcpp.toml").write_text(
+        f'[package]\nname = "exports"\nversion = "0.1.0"\n\n[target.{target}]\nplatform = {named}\n', encoding="utf-8")
     (project / "src/main.cpp").write_text(
         'import std;\nint main() { std::vector<std::string> v{"a"}; std::println("{}", v.size()); }\n',
         encoding="utf-8")
-    subprocess.run([mcpp, "build", "--target", target, "--platform", platform], cwd=project, check=True)
+    subprocess.run([mcpp, "build", "--target", target], cwd=project, check=True)
     found = {}
     for layer in LAYERS:
         objects = [p for p in (project / "target").rglob("*.o") if layer in p.parts]
@@ -263,6 +280,8 @@ def exports(old, new, mcpp, target, nm):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--also", action="append", default=[], metavar="NAME@VERSION")
+    parser.add_argument("--review", action="store_true",
+                        help="the platform is the working tree under review; its tag follows the merge")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("check")
     p = sub.add_parser("index")
@@ -273,16 +292,16 @@ def main():
     sub.add_parser("defects")
     p = sub.add_parser("exports")
     p.add_argument("old", help="openkal-platform@<version> released before")
-    p.add_argument("new", help="openkal-platform@<version> of this group")
+    p.add_argument("new", help="openkal-platform@<version> of this group, or the working tree under review")
     p.add_argument("--mcpp", default="mcpp")
     p.add_argument("--target", default="x86_64-openkal")
     p.add_argument("--nm", default=shutil.which("llvm-nm") or "llvm-nm")
     args = parser.parse_args()
     members = group(args.also)
     if args.command == "check":
-        return check(members)
+        return check(members, args.review)
     if args.command == "index":
-        return index(members, args.checkout.resolve())
+        return index(members, args.checkout.resolve(), args.review)
     if args.command == "visible":
         return visible(members, args.synced.resolve(), args.xim.resolve() if args.xim else None)
     if args.command == "defects":

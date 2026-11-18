@@ -3,13 +3,16 @@ name: Family release
 # The release of the version group this repository states (mcpp design
 # 2026-11-07, §4.2.2, A5 and A6), run on every change of the group and on demand:
 #
-#   group     every member's tag and its GitCode mirror (the same bytes); the
+#   group     every member's tag and its GitCode mirror (the same bytes; on a
+#             pull request the platform itself is the tree under review, and
+#             its tag follows the merge); the
 #             open issues of the members' repositories, for the release notes;
 #             the group's one index change, written into mcpp-index's main and
 #             kept as an artifact (`index-change.patch`), from which the
 #             maintainer opens the one index PR
-#   resolve   over that candidate index, the released mcpp and the one under
-#             review resolve an image of the group and build it; and for a
+#   resolve   over that candidate index, the engine the platform states as
+#             its floor and the newest one resolve an image of the group and
+#             build it (on a pull request, with this tree as the platform); and for a
 #             patch group, the C library and the C++ run-time objects the image
 #             links keep every global symbol of the previous patch's
 #
@@ -40,7 +43,6 @@ defaults:
     shell: bash
 
 env:
-  MCPP_PREVIOUS: 2026.11.13.1
   MCPP_SOURCE_REF: ${{ github.event.inputs.mcpp_ref || vars.MCPP_SOURCE_REF || '' }}
   XLINGS_VERSION: v2026.10.26.1
   XLINGS_NON_INTERACTIVE: '1'
@@ -55,6 +57,8 @@ jobs:
       - name: Tags and mirrors
         run: |
           also=(); for spec in ${{ github.event.inputs.also }}; do also+=(--also "$spec"); done
+          # On a pull request the platform is the tree under review: its tag follows the merge.
+          [ "$GITHUB_EVENT_NAME" = pull_request ] && also+=(--review)
           echo "ALSO=${also[*]}" >> "$GITHUB_ENV"
           python3 tools/family_release.py "${also[@]}" check | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Open issues of the members
@@ -85,9 +89,11 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash -s "$XLINGS_VERSION"
           export PATH="$HOME/.xlings/subos/current/bin:$PATH"
           echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+          # The older engine is the one the platform states as its floor.
+          floor=$(python3 -c 'import tomllib; print(tomllib.load(open("mcpp.toml","rb"))["package"]["mcpp"].lstrip(">= "))')
           for attempt in 1 2 3 4 5; do
             xlings update > /dev/null 2>&1 || true
-            if xlings install "mcpp@$MCPP_PREVIOUS" -y -g; then break; fi
+            if xlings install "mcpp@$floor" -y -g; then break; fi
             [ "$attempt" = 5 ] && exit 1
             sleep 60
           done
@@ -120,18 +126,24 @@ jobs:
       - name: Both mcpp releases resolve and build an image of the group
         run: |
           version=$(python3 -c 'import tomllib; print(tomllib.load(open("mcpp.toml","rb"))["package"]["version"])')
-          echo "PLATFORM=openkal-platform@$version" >> "$GITHUB_ENV"
+          # Released, the platform is named; on a pull request it is this tree.
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            platform="{ path = \"$GITHUB_WORKSPACE\" }"; echo "PLATFORM=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          else
+            platform="\"openkal-platform@$version\""; echo "PLATFORM=openkal-platform@$version" >> "$GITHUB_ENV"
+          fi
+          echo "PLATFORM_VERSION=$version" >> "$GITHUB_ENV"
           for mcpp in "$MCPP_OLD" "$MCPP_NEW"; do
             dir="$RUNNER_TEMP/probe-$(basename "$(dirname "$(dirname "$mcpp")")")"
             mkdir -p "$dir/src"
-            printf '[package]\nname = "probe"\nversion = "0.1.0"\n' > "$dir/mcpp.toml"
+            printf '[package]\nname = "probe"\nversion = "0.1.0"\n\n[target.x86_64-openkal]\nplatform = %s\n' "$platform" > "$dir/mcpp.toml"
             printf 'import std;\nint main() { std::println("group ok"); }\n' > "$dir/src/main.cpp"
-            ( cd "$dir" && "$mcpp" build --target x86_64-openkal --platform "openkal-platform@$version" ) \
+            ( cd "$dir" && "$mcpp" build --target x86_64-openkal ) \
               || { echo "::error::$("$mcpp" --version) did not build an image of the group"; exit 1; }
           done
       - name: A patch keeps every global symbol of the previous patch
         run: |
-          version=${PLATFORM#*@}
+          version=$PLATFORM_VERSION
           patch=${version##*.}
           if [ "$patch" = 0 ]; then echo "a minor version: no previous patch to compare"; exit 0; fi
           previous="openkal-platform@${version%.*}.$((patch - 1))"
