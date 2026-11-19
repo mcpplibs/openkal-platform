@@ -165,6 +165,23 @@ builds openkal-run's core runner as a program of the DOS row below, with the
 image in its `.oke` section. Measured under DOSBox Staging: the image sorted its
 arguments, caught its exception, read DOS's `PATH` and returned 7.
 
+Platform 0.31.1 is a patch of the group with two members. openkal-image 0.7.1:
+its runner joins its task that waits for the requests to end before it ends the
+program, so the program ends with the image's tasks alone. Under GDB 15,
+continued to the end of an image, the runner of 0.7.0 ended the program before
+GDB resumed that task, and GDB stopped with "Couldn't get registers: No such
+process" instead of the program's end. The runner takes the requests once the
+image is loaded, so a start that is refused leaves them as they were. An image
+file or an okb that an image starts is entered through the loader the program
+names, held to the runner's signature requirements, and observes the vector
+its starter gave; under 0.7.0 the system ran its bytes, and the start ended by
+SIGSEGV on Linux. The image's name (`kal_env_image`) is absolute. The carrier
+and the tools are 0.7.1. openkal-macos 0.24.1: a request acted on by a
+context other than the program's first ends the program as the request. The
+runner's task is such a context, and under 0.24.0 its call ended the program
+with the status 143 before the request's own delivery in one run of two. No
+other member changes.
+
 Platform 0.31.0 is the openkal 0.26 family: openkal 0.26.0 (a start bounded by
 the environment alone, a refused one `kal_err_no_space`; what an observation of a
 unit answers, and where a unit is claimed), openkal-linux 0.27.0, openkal-macos
@@ -205,7 +222,7 @@ until a project or this machine does:
 
 ```toml
 [target.x86_64-freebsd-musl]
-platform = "openkal-platform@0.31.0"
+platform = "openkal-platform@0.31.1"
 runner   = { enabled = true }
 ```
 
@@ -317,7 +334,7 @@ with `import std`:
 
 ```toml
 [target.x86_64-uefi]
-platform = "openkal-platform@0.31.0"
+platform = "openkal-platform@0.31.1"
 runner   = { enabled = true }
 ```
 
@@ -353,7 +370,7 @@ and C++ run-time over openkal-svr4, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-svr4-musl]
-platform = "openkal-platform@0.31.0"
+platform = "openkal-platform@0.31.1"
 runner   = { enabled = true }
 ```
 
@@ -407,7 +424,7 @@ run-time over openkal-dos, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-dos-musl]
-platform = "openkal-platform@0.31.0"
+platform = "openkal-platform@0.31.1"
 ```
 
 The row is TECHNICAL EXPERIMENT ONLY (openkal-dos's README). A program is the
