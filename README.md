@@ -169,11 +169,13 @@ Platform 0.31.0 is the openkal 0.26 family: openkal 0.26.0 (a start bounded by
 the environment alone, a refused one `kal_err_no_space`; what an observation of a
 unit answers, and where a unit is claimed), openkal-linux 0.27.0, openkal-macos
 0.24.0, openkal-windows 0.23.0, openkal-freebsd 0.2.0, openkal-uefi 0.12.0,
-openkal-dos and openkal-dos-tools 0.2.0 and openkal-svr4 0.2.0; openkal-musl
+openkal-dos and openkal-dos-tools 0.2.0 and openkal-svr4 0.3.0 (which claims
+`openkal.process` and `openkal.space`, below); openkal-musl
 0.30.0 and openkal-llvm-runtime 0.21.0 above them; and openkal-image 0.7.0, whose
 runner, asked to end, names the openkal call each task of the image waits in
 before it acts on the request. The layers, the carrier, the tools and the rows
-name them. The platform requires mcpp 2026.11.17.1, as 0.30.0 does.
+name them. The build program links mcpp.plugins 0.26.1, whose mcpplibs.os 0.4.5
+accepts openkal 0.26. The platform requires mcpp 2026.11.17.1, as 0.30.0 does.
 
 Platform 0.30.1 states the program headers of `i686-svr4-musl` (no `PT_PHDR`,
 which the kernel of System V/386 Release 4.0 refuses in a static executable); no
@@ -365,9 +367,11 @@ row's flags are the DOS row's (`-march=i486`, emulated thread-local storage,
 unwind tables, the stack aligned to sixteen bytes), and the allocator is musl's
 own.
 
-The row has no threads (the kernel of Release 4.0 has none), no random source,
-no network, and starts no other program (openkal-svr4 0.1 claims no
-`openkal.process`). Its tier is `preview`.
+The row has no threads (the kernel of Release 4.0 has none), no random source
+and no network. From platform 0.31.0 it starts other programs: openkal-svr4 0.3.0
+claims `openkal.process` and `openkal.space`, and the runner is ibcs-us 4.3-2, in
+which a program that replaces its image stays in the emulation. Its tier is
+`preview`.
 
 `mcpp run` runs the program under xim's `ibcs-us`, on a Linux x86_64 host that
 lets an unprivileged user make a user namespace. **That is an emulation of the
@@ -388,6 +392,12 @@ kernel kills an executable that has a `PT_PHDR` entry and no `PT_INTERP` one, wh
 a static link writes by default, so the row states its program headers
 (`link/svr4.ld`: the same three segments, no `PT_PHDR`). The unoptimised
 executables were stripped of their debugging sections to fit a floppy.
+
+**openkal-svr4 0.3.0 (platform 0.31.0), measured by its CI.** The suite of openkal
+0.26.0 with the features `env`, `time`, `fs`, `terminal`, `process` and `space`
+holds 168 observations and fails none on the same System V kernel in QEMU (dirun
+0.8.0 with xim's `svr4-disk-image`), and holds 157 and fails none under each of
+ibcs-us 4.3-2's three interfaces.
 
 ## DOS programs (0.28.0; technical experiment only)
 
