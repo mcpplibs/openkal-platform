@@ -165,6 +165,16 @@ builds openkal-run's core runner as a program of the DOS row below, with the
 image in its `.oke` section. Measured under DOSBox Staging: the image sorted its
 arguments, caught its exception, read DOS's `PATH` and returned 7.
 
+Platform 0.31.0 is the openkal 0.26 family: openkal 0.26.0 (a start bounded by
+the environment alone, a refused one `kal_err_no_space`; what an observation of a
+unit answers, and where a unit is claimed), openkal-linux 0.27.0, openkal-macos
+0.24.0, openkal-windows 0.23.0, openkal-freebsd 0.2.0, openkal-uefi 0.12.0,
+openkal-dos and openkal-dos-tools 0.2.0 and openkal-svr4 0.2.0; openkal-musl
+0.30.0 and openkal-llvm-runtime 0.21.0 above them; and openkal-image 0.7.0, whose
+runner, asked to end, names the openkal call each task of the image waits in
+before it acts on the request. The layers, the carrier, the tools and the rows
+name them. The platform requires mcpp 2026.11.17.1, as 0.30.0 does.
+
 Platform 0.30.1 states the program headers of `i686-svr4-musl` (no `PT_PHDR`,
 which the kernel of System V/386 Release 4.0 refuses in a static executable); no
 member changes. Platform 0.30.0 adds a row and a member: `i686-svr4-musl`, programs of UNIX
@@ -193,7 +203,7 @@ until a project or this machine does:
 
 ```toml
 [target.x86_64-freebsd-musl]
-platform = "openkal-platform@0.30.1"
+platform = "openkal-platform@0.31.0"
 runner   = { enabled = true }
 ```
 
@@ -305,7 +315,7 @@ with `import std`:
 
 ```toml
 [target.x86_64-uefi]
-platform = "openkal-platform@0.30.1"
+platform = "openkal-platform@0.31.0"
 runner   = { enabled = true }
 ```
 
@@ -341,7 +351,7 @@ and C++ run-time over openkal-svr4, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-svr4-musl]
-platform = "openkal-platform@0.30.1"
+platform = "openkal-platform@0.31.0"
 runner   = { enabled = true }
 ```
 
@@ -387,7 +397,7 @@ run-time over openkal-dos, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-dos-musl]
-platform = "openkal-platform@0.30.1"
+platform = "openkal-platform@0.31.0"
 ```
 
 The row is TECHNICAL EXPERIMENT ONLY (openkal-dos's README). A program is the
