@@ -165,7 +165,9 @@ builds openkal-run's core runner as a program of the DOS row below, with the
 image in its `.oke` section. Measured under DOSBox Staging: the image sorted its
 arguments, caught its exception, read DOS's `PATH` and returned 7.
 
-Platform 0.30.0 adds a row and a member: `i686-svr4-musl`, programs of UNIX
+Platform 0.30.1 states the program headers of `i686-svr4-musl` (no `PT_PHDR`,
+which the kernel of System V/386 Release 4.0 refuses in a static executable); no
+member changes. Platform 0.30.0 adds a row and a member: `i686-svr4-musl`, programs of UNIX
 System V Release 4 and its descendants on i386, over openkal-svr4 0.1.0 (below).
 In openkal-musl 0.29.10 and openkal-llvm-runtime 0.20.4 a system they do not know
 takes the general selections, where the selections named systems; the rows served
@@ -191,7 +193,7 @@ until a project or this machine does:
 
 ```toml
 [target.x86_64-freebsd-musl]
-platform = "openkal-platform@0.30.0"
+platform = "openkal-platform@0.30.1"
 runner   = { enabled = true }
 ```
 
@@ -303,7 +305,7 @@ with `import std`:
 
 ```toml
 [target.x86_64-uefi]
-platform = "openkal-platform@0.30.0"
+platform = "openkal-platform@0.30.1"
 runner   = { enabled = true }
 ```
 
@@ -339,7 +341,7 @@ and C++ run-time over openkal-svr4, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-svr4-musl]
-platform = "openkal-platform@0.30.0"
+platform = "openkal-platform@0.30.1"
 runner   = { enabled = true }
 ```
 
@@ -364,8 +366,18 @@ as the interface states them. Measured under it, as UnixWare 7, Solaris and
 OpenServer 5: the specification's suite conforms in every observation made (111
 held), and a C++23 program with `import std` sorted its arguments, caught an
 exception, made, renamed, listed (301 names) and removed files, and returned 7,
-unoptimised and optimised. No run on a System V kernel has been made; it needs the
-system's own media in a machine emulator.
+unoptimised and optimised.
+
+**On a System V kernel (0.30.1), measured once and not by CI.** AT&T UNIX System
+V/386 Release 4.0 Version 3.0 was installed in QEMU from its floppy set, which this
+platform neither holds nor distributes, on the developer's machine. The
+specification's suite conformed there in every observation made (111 held), and the
+program of `checks/svr4` and a C program ran, unoptimised and optimised, as they do
+under the emulation. One difference was found and is the row's from 0.30.1: that
+kernel kills an executable that has a `PT_PHDR` entry and no `PT_INTERP` one, which
+a static link writes by default, so the row states its program headers
+(`link/svr4.ld`: the same three segments, no `PT_PHDR`). The unoptimised
+executables were stripped of their debugging sections to fit a floppy.
 
 ## DOS programs (0.28.0; technical experiment only)
 
@@ -375,7 +387,7 @@ run-time over openkal-dos, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-dos-musl]
-platform = "openkal-platform@0.30.0"
+platform = "openkal-platform@0.30.1"
 ```
 
 The row is TECHNICAL EXPERIMENT ONLY (openkal-dos's README). A program is the
