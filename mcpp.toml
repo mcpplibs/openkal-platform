@@ -12,7 +12,7 @@
 [package]
 namespace   = "mcpplibs"
 name        = "openkal-platform"
-version     = "0.30.0"
+version     = "0.30.1"
 description = "The platform of ok images (<arch>-openkal): their toolchain, C library and C++ run-time, tools, compile and link conventions, seal, runner and carrier, as one versioned statement mcpp reads."
 license     = "Apache-2.0"
 authors     = ["mcpplibs"]
@@ -359,6 +359,16 @@ runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:dosbox-staging}
 # System V kernel needs the system's own media and is not this runner's. A
 # program that replaces its image leaves the emulation, so openkal-svr4 0.1 claims
 # no `openkal.process' and the row starts no other program. The tier is `preview'.
+#
+# THE PROGRAM HEADERS ARE THE ROW'S STATEMENT (0.30.1; `link/svr4.ld'). The kernel
+# of System V/386 Release 4.0 refuses an executable that has a PT_PHDR entry and
+# no PT_INTERP one, after the old image is gone: the program is killed as it
+# starts. A static link writes that entry unless the headers are stated, so the
+# row states them: the three segments the link made before, the file's headers in
+# the first, and no PT_PHDR. Found by running the row's programs on that kernel
+# (AT&T UNIX System V/386 Release 4.0 Version 3.0 in QEMU, on the developer's
+# machine, from media this platform neither holds nor distributes); the emulation
+# accepts either form.
 [[platform.system]]
 name = "svr4"
 
@@ -380,7 +390,7 @@ base   = "none"
 hosted = true
 
 layers = { "kernel-abi" = { name = "openkal-svr4", version = "0.1.0", features = ["standalone"] }, compiler-runtime = "openkal-llvm-runtime@0.20.4", "c++-abi" = "openkal-llvm-runtime@0.20.4", c-abi = { name = "openkal-musl", version = "0.29.10", default-features = false, features = ["posix", "malloc-mallocng"] } }
-link   = { driver = "lld", flags = ["-static", "-z", "norelro", "--gc-sections", "--eh-frame-hdr"] }
+link   = { driver = "lld", script = "link/svr4.ld", flags = ["-static", "-z", "norelro", "--gc-sections", "--eh-frame-hdr"] }
 runner = { cmd = ["unshare", "-Ur", "{pkg:ibcs-us}/bin/ibcs-us", "{}"], hosts = ["linux-x86_64"], requires = ["xim:ibcs-us@4.3-1"], enabled = false }
 
 # The family released together for openkal 0.17 (the 0.17.2 round: okb, the
@@ -451,7 +461,8 @@ runner = { cmd = ["unshare", "-Ur", "{pkg:ibcs-us}/bin/ibcs-us", "{}"], hosts = 
 # volume's root); 0.30.0, openkal-svr4 0.1.0 (System V Release 4 on i386, the
 # `kernel-abi' layer of its row) with openkal-musl 0.29.10 and openkal-llvm-runtime
 # 0.20.4, in which a system they do not know takes the general selections, where
-# the selections named systems. From 0.24.1 the members name one another by
+# the selections named systems; 0.30.1, no member changes (the System V row's
+# program headers, above). From 0.24.1 the members name one another by
 # compatible ranges (`^0.28.0`) and this group chooses the versions: mcpp
 # 2026.11.7.1 resolves within it, and a fix of one member is that member's
 # release and a patch of this group, released together through one index change

@@ -436,6 +436,14 @@ jobs:
           file "$p"
           file "$p" | grep -q 'ELF 32-bit LSB executable, Intel 80386.*statically linked' \
             || { echo "::error::the program is not a static ELF32 i386 executable"; exit 1; }
+          # 0.30.1: the kernel of System V/386 Release 4.0 kills a static program
+          # that has PT_PHDR, so the row's link (link/svr4.ld) writes none; the
+          # emulation above accepts either, and this is what holds the statement.
+          for q in $(find target/i686-svr4-musl -path '*bin/svr4' -type f); do
+            readelf -lW "$q" | tee headers.log
+            if grep -qE '^ +(PHDR|INTERP) ' headers.log; then echo "::error::$q has a PT_PHDR or PT_INTERP entry"; exit 1; fi
+            [ "$(grep -cE '^ +LOAD ' headers.log)" -eq 3 ] || { echo "::error::$q does not have three PT_LOAD segments"; exit 1; }
+          done
 
       # The same executable under the interfaces the emulation is told to answer
       # as: the part of the interface the program issues is the one they share.
