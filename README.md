@@ -165,6 +165,14 @@ builds openkal-run's core runner as a program of the DOS row below, with the
 image in its `.oke` section. Measured under DOSBox Staging: the image sorted its
 arguments, caught its exception, read DOS's `PATH` and returned 7.
 
+Platform 0.31.2 is a patch of the group with one member. openkal-image 0.7.2: a
+copy of the program ends as the copy ends itself. A library composes `fork` by
+starting a context in a copy of the address space (openkal.space); the copy
+holds the runner's memory and not the runner's task that waits for the requests
+to end, and under 0.7.1 the copy's `kal_exit` waited for that task to return,
+so a program an image started by fork and exec never ended (openkal-image#44).
+The carrier and the tools are 0.7.2. No other member changes.
+
 Platform 0.31.1 is a patch of the group with two members. openkal-image 0.7.1:
 its runner joins its task that waits for the requests to end before it ends the
 program, so the program ends with the image's tasks alone. Under GDB 15,
@@ -222,7 +230,7 @@ until a project or this machine does:
 
 ```toml
 [target.x86_64-freebsd-musl]
-platform = "openkal-platform@0.31.1"
+platform = "openkal-platform@0.31.2"
 runner   = { enabled = true }
 ```
 
@@ -334,7 +342,7 @@ with `import std`:
 
 ```toml
 [target.x86_64-uefi]
-platform = "openkal-platform@0.31.1"
+platform = "openkal-platform@0.31.2"
 runner   = { enabled = true }
 ```
 
@@ -370,7 +378,7 @@ and C++ run-time over openkal-svr4, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-svr4-musl]
-platform = "openkal-platform@0.31.1"
+platform = "openkal-platform@0.31.2"
 runner   = { enabled = true }
 ```
 
@@ -424,7 +432,7 @@ run-time over openkal-dos, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-dos-musl]
-platform = "openkal-platform@0.31.1"
+platform = "openkal-platform@0.31.2"
 ```
 
 The row is TECHNICAL EXPERIMENT ONLY (openkal-dos's README). A program is the
