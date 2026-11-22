@@ -165,6 +165,17 @@ builds openkal-run's core runner as a program of the DOS row below, with the
 image in its `.oke` section. Measured under DOSBox Staging: the image sorted its
 arguments, caught its exception, read DOS's `PATH` and returned 7.
 
+Platform 0.32.0 is a minor release of the group. A program of the firmware and
+of DOS starts programs: openkal-uefi 0.13.0 provides `openkal.process` through
+`LoadImage` and `StartImage`, and openkal-dos and openkal-dos-tools 0.3.0
+through EXEC, each a started program run to its end before the start returns
+(openkal clause 7.19), so `x86_64-uefi` and `i686-dos-musl` state the interface
+and a program's `posix_spawn` and `waitpid` start and wait for a program there.
+openkal-musl 0.30.1 names them. openkal-windows 0.23.1: a program without
+memory for its arguments and variables ends with that reason. `checks/uefi` and
+`checks/dos` start themselves through the rows' runners in CI and read the
+status 3. It holds 0.31.3's member, openkal-image 0.7.3.
+
 Platform 0.31.3 is a patch of the group with one member. openkal-image 0.7.3:
 okrun's command line is a function of the runner (`okrun_main`), and the
 carrier, as a package's runner, is that function, so it names itself the
@@ -240,7 +251,7 @@ until a project or this machine does:
 
 ```toml
 [target.x86_64-freebsd-musl]
-platform = "openkal-platform@0.31.3"
+platform = "openkal-platform@0.32.0"
 runner   = { enabled = true }
 ```
 
@@ -352,7 +363,7 @@ with `import std`:
 
 ```toml
 [target.x86_64-uefi]
-platform = "openkal-platform@0.31.3"
+platform = "openkal-platform@0.32.0"
 runner   = { enabled = true }
 ```
 
@@ -388,7 +399,7 @@ and C++ run-time over openkal-svr4, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-svr4-musl]
-platform = "openkal-platform@0.31.3"
+platform = "openkal-platform@0.32.0"
 runner   = { enabled = true }
 ```
 
@@ -442,7 +453,7 @@ run-time over openkal-dos, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-dos-musl]
-platform = "openkal-platform@0.31.3"
+platform = "openkal-platform@0.32.0"
 ```
 
 The row is TECHNICAL EXPERIMENT ONLY (openkal-dos's README). A program is the

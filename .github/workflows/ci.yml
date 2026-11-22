@@ -332,6 +332,8 @@ jobs:
           set -e
           grep -q 'uefi ok: \[1, 2, 3\] \["one", "two three", "a   b"\]' run.log || { echo "::error::the application's output or arguments"; exit 1; }
           grep -q 'files: true' run.log || { echo "::error::a file was not renamed or a listing shortened its name (release profile)"; exit 1; }
+          # A start of a program (0.32.0, openkal-uefi 0.13.0): LoadImage and StartImage.
+          grep -q 'starts: child 3' run.log || { echo "::error::the application did not start itself and read its status"; exit 1; }
           [ "$status" -eq 42 ] || { echo "::error::the application returned $status, not 42"; exit 1; }
           p=$(find target/x86_64-uefi -path '*bin/uefi.efi' -type f | head -1)
           file "$p"
@@ -506,6 +508,7 @@ jobs:
             grep -q 'dos ok: \["one", "two"\]' run.log && grep -q 'caught: across a frame' run.log \
               && grep -q 'deep: 2080' run.log \
               && grep -q 'files: true' run.log \
+              && grep -q 'starts: child 3' run.log \
               || { echo "::error::the DOS program's output ($mode)"; exit 1; }
             [ "$status" -eq 7 ] || { echo "::error::the DOS program returned $status, not 7 ($mode)"; exit 1; }
           done
