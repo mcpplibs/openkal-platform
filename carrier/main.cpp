@@ -3,8 +3,9 @@
 // `mcpp_carried_end`, and its name at `mcpp_carried_name`:
 //
 //   nothing      the program is a package's runner
-//                (`libexec/okrun/<os>-<arch>/okrun`): it runs the image, or the
-//                okb, its first argument names, as okrun does;
+//                (`libexec/okrun/<os>-<arch>/okrun`): it is okrun's command
+//                line (okrun_main, openkal-run 0.7.3), and so the loader an
+//                image's start of an image file goes through;
 //   a zip        the images of a program (a single file): the entry and the
 //                images it needs run from memory, nothing written to disk;
 //   an image     the image runs from memory, as its own program (M3).
@@ -20,15 +21,11 @@ int main(int argc, char** argv) {
     okrun_options options{};
     const auto size = static_cast<unsigned long long>(mcpp_carried_end - mcpp_carried_begin);
     const auto args = const_cast<const char* const*>(argv);
-    if (size == 0) {
-        if (argc < 2) {
-            std::fprintf(stderr, "usage: %s <image|okb> [arguments...]\n", argv[0]);
-            return 2;
-        }
-        okrun_run_file(argv[1], argc - 1, args + 1, &options, why, sizeof why);
-        std::fprintf(stderr, "%s: %s\n", argv[1], why);
-        return 127;
-    }
+    // A RUNNER NAMES ITSELF THE LOADER (0.31.3, openkal-image#46). With default
+    // options it named none, and an image's start of an image file was refused:
+    // on i686-openkal, whose runner this is, `posix_spawn` of the image itself
+    // gave ENOEXEC, and a copy that called exec ended with 127.
+    if (size == 0) return okrun_main(argc, argv);
     options.carried = 1;   // the program is the image's name, and what starts it again
     if (size >= 4 && std::memcmp(mcpp_carried_begin, "PK\x03\x04", 4) == 0)
         okrun_run_okb_bytes(mcpp_carried_begin, size, mcpp_carried_name, argc, args, &options,

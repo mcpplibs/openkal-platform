@@ -389,6 +389,18 @@ jobs:
             [ "$status" -eq 7 ] || { echo "::error::the image returned $status, not 7 ($mode)"; exit 1; }
           done
 
+      # The row's runner is the carrier, packed by mcpp (0.31.3, openkal-image#46): an
+      # image that starts itself is entered through the carrier as its loader.
+      - name: An image starts itself through the row's runner
+        working-directory: checks/starts
+        run: |
+          set +e
+          mcpp run --target i686-openkal | tee run.log
+          status=${PIPESTATUS[0]}
+          set -e
+          [ "$status" -eq 0 ] && grep -qx 'starts: child 3' run.log \
+            || { echo "::error::an i386 image's start of itself through the carrier (status $status)"; exit 1; }
+
   # System V Release 4 on i386 (0.30.0): a program of i686-svr4-musl (openkal-musl
   # over openkal-svr4) built in both modes and run by the provider's runner,
   # ibcs-us in a user namespace; then the same executable under the two other

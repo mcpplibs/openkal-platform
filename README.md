@@ -165,6 +165,16 @@ builds openkal-run's core runner as a program of the DOS row below, with the
 image in its `.oke` section. Measured under DOSBox Staging: the image sorted its
 arguments, caught its exception, read DOS's `PATH` and returned 7.
 
+Platform 0.31.3 is a patch of the group with one member. openkal-image 0.7.3:
+okrun's command line is a function of the runner (`okrun_main`), and the
+carrier, as a package's runner, is that function, so it names itself the
+loader through which an image's start of an image file goes. Under 0.31.2 the
+carrier named no loader: on `i686-openkal`, whose runner is the carrier, an
+image that started an image was refused (`ENOEXEC` from `posix_spawn`, status
+127 in a copy that called exec; openkal-image#46). `checks/starts` starts
+itself on that row in CI. The carrier and the tools are 0.7.3. No other member
+changes.
+
 Platform 0.31.2 is a patch of the group with one member. openkal-image 0.7.2: a
 copy of the program ends as the copy ends itself. A library composes `fork` by
 starting a context in a copy of the address space (openkal.space); the copy
@@ -230,7 +240,7 @@ until a project or this machine does:
 
 ```toml
 [target.x86_64-freebsd-musl]
-platform = "openkal-platform@0.31.2"
+platform = "openkal-platform@0.31.3"
 runner   = { enabled = true }
 ```
 
@@ -342,7 +352,7 @@ with `import std`:
 
 ```toml
 [target.x86_64-uefi]
-platform = "openkal-platform@0.31.2"
+platform = "openkal-platform@0.31.3"
 runner   = { enabled = true }
 ```
 
@@ -378,7 +388,7 @@ and C++ run-time over openkal-svr4, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-svr4-musl]
-platform = "openkal-platform@0.31.2"
+platform = "openkal-platform@0.31.3"
 runner   = { enabled = true }
 ```
 
@@ -432,7 +442,7 @@ run-time over openkal-dos, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-dos-musl]
-platform = "openkal-platform@0.31.2"
+platform = "openkal-platform@0.31.3"
 ```
 
 The row is TECHNICAL EXPERIMENT ONLY (openkal-dos's README). A program is the
