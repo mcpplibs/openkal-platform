@@ -336,6 +336,41 @@ layers = { compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openka
 link   = { driver = "lld", start = "okdos_entry", flags = ["-static", "--image-base=0x1000", "-z", "norelro", "-z", "stack-size=1048576", "--gc-sections", "--eh-frame-hdr"], seal = [["okdos", "seal", "{}"]] }
 runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:dosbox-staging}/dirun.toml", "--"], hosts = ["linux-x86_64", "macos-aarch64", "windows-x86_64"], requires = ["xim:dirun@0.6.0", "xim:dosbox-staging@0.83.0-2"], enabled = false }
 
+# A MACHINE WITH NO OPERATING SYSTEM, ABOVE RISC-V SBI FIRMWARE (0.32.0): programs OpenSBI starts
+# on a RISC-V machine (QEMU's `virt' with `-bios default', or a board whose firmware is OpenSBI), on
+# the same C library and C++ run-time over openkal-opensbi. The row is the no-system row of the
+# family: `cfg(os = "none")' selects what openkal-musl and openkal-llvm-runtime state for a machine
+# with no operating system --- no files, programs or contexts, the unwinder that reads its tables
+# through the symbols the linker script defines (the program headers lie below the address the
+# firmware enters, so they are not loaded), the C++ run-time's freestanding configuration --- and
+# openkal-opensbi supplies the entry, the memory map (`board.ld': the image at 0x80200000, a stack
+# and a heap past it) and the console. The machine description is the built-in `riscv64-none-elf'
+# row's: RV64GC, the LP64D convention, the medium-any code model. The program's status leaves the
+# machine through the test finisher its device tree describes (openkal-opensbi 0.10.1); a program
+# receives no arguments, SBI having none to give. The runner is QEMU's `virt' machine with the
+# OpenSBI it bundles (xim's `qemu-riscv').
+[[platform.define]]
+triple        = "riscv64-none-musl"
+clang-triple  = "riscv64-unknown-none-elf"
+object-format = "elf"
+data-model    = "lp64"
+execution     = "none"
+tier          = "preview"
+march         = "rv64gc"
+mabi          = "lp64d"
+code-model    = "medany"
+flags         = ["-fasynchronous-unwind-tables", "-ffunction-sections", "-fdata-sections"]
+
+[[platform.provider]]
+name   = "sbi"
+serves = ["riscv64-none-musl"]
+base   = "none"
+hosted = true
+
+layers = { "kernel-abi" = { name = "openkal-opensbi", version = "0.10.1", features = ["standalone"] }, compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.1", default-features = false, features = ["posix", "malloc-mallocng"] } }
+link   = { driver = "lld", start = "_start", flags = ["-static", "-z", "norelro", "--gc-sections", "--eh-frame-hdr"] }
+runner = { cmd = ["{pkg:qemu-riscv}/bin/qemu-system-riscv64", "-machine", "virt", "-nographic", "-no-reboot", "-bios", "default", "-kernel", "{}"], hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64"], requires = ["xim:qemu-riscv@9.2.4-1"], enabled = false }
+
 # UNIX SYSTEM V RELEASE 4 AND ITS DESCENDANTS ON i386 (0.30.0): programs of the
 # kernel's own system-call interface, on the same C library and C++ run-time over
 # openkal-svr4. Nothing of a system is linked or read: the program is one static
@@ -499,6 +534,7 @@ openkal-uefi         = "0.13.0"
 openkal-dos          = "0.3.0"
 openkal-dos-tools    = "0.3.0"
 openkal-svr4         = "0.3.0"
+openkal-opensbi      = "0.10.1"
 openkal-musl         = "0.30.1"
 openkal-llvm-runtime = "0.21.0"
 openkal-ld           = "0.7.3"

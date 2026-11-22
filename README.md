@@ -174,7 +174,9 @@ and a program's `posix_spawn` and `waitpid` start and wait for a program there.
 openkal-musl 0.30.1 names them. openkal-windows 0.23.1: a program without
 memory for its arguments and variables ends with that reason. `checks/uefi` and
 `checks/dos` start themselves through the rows' runners in CI and read the
-status 3. It holds 0.31.3's member, openkal-image 0.7.3.
+status 3. A row is added for a machine with no operating system above RISC-V SBI
+firmware, `riscv64-none-musl` (below), with openkal-opensbi 0.10.1 joining the
+group. It holds 0.31.3's member, openkal-image 0.7.3.
 
 Platform 0.31.3 is a patch of the group with one member. openkal-image 0.7.3:
 okrun's command line is a function of the runner (`okrun_main`), and the
@@ -353,6 +355,39 @@ toolchain, the C library and the C++ run-time of the family over the system's
 own openkal implementation (`checks/hosted`). `[host] platform` selects it for
 the host graph: build programs are then compiled as ok images of the machine's
 architecture and run by okrun (`checks/host-graph`).
+
+## A machine with no operating system, above RISC-V SBI (0.32.0)
+
+`riscv64-none-musl` is a row this platform defines and serves: a program that
+OpenSBI starts on a RISC-V machine, on the same C library and C++ run-time over
+openkal-opensbi, so it is written in C or in C++23 with `import std`.
+
+```toml
+[target.riscv64-none-musl]
+platform = "openkal-platform@0.32.0"
+runner   = { enabled = true }
+```
+
+```sh
+mcpp run --target riscv64-none-musl      # QEMU's virt with the OpenSBI it bundles; the status comes back
+```
+
+The row is the family's row with no system (`cfg(os = "none")`): what
+openkal-musl and openkal-llvm-runtime state for a machine with no operating
+system applies, among it the unwinder that finds its tables through the symbols
+the linker script defines, since the program headers lie below the address the
+firmware enters and are not loaded. openkal-opensbi supplies the entry, the
+memory map (`board.ld`: the image at 0x80200000, a stack and a heap past it) and
+the console. The machine description is the built-in `riscv64-none-elf` row's:
+RV64GC, LP64D, the medium-any code model. A program's status leaves the machine
+through the test finisher its device tree describes (openkal-opensbi 0.10.1);
+SBI gives a program no arguments, and it receives none. The runner (xim's
+`qemu-riscv`) boots a machine and is enabled by the project. An engine reads a
+row a platform defines with no system from the release after mcpp 2026.11.22.1.
+
+`checks/sbi` runs in CI: a C program allocates, reads the clock and ends with 7;
+a C++ program sorts, throws across three frames with a destructor in each and
+catches, and ends with 9.
 
 ## UEFI applications (0.28.0)
 
