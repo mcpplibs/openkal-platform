@@ -332,11 +332,65 @@ jobs:
           set -e
           grep -q 'uefi ok: \[1, 2, 3\] \["one", "two three", "a   b"\]' run.log || { echo "::error::the application's output or arguments"; exit 1; }
           grep -q 'files: true' run.log || { echo "::error::a file was not renamed or a listing shortened its name (release profile)"; exit 1; }
+          # A start of a program (0.32.0, openkal-uefi 0.13.0): LoadImage and StartImage.
+          grep -q 'starts: child 3' run.log || { echo "::error::the application did not start itself and read its status"; exit 1; }
           [ "$status" -eq 42 ] || { echo "::error::the application returned $status, not 42"; exit 1; }
           p=$(find target/x86_64-uefi -path '*bin/uefi.efi' -type f | head -1)
           file "$p"
           file "$p" | grep -q 'PE32+' && file "$p" | grep -q 'EFI application' \
             || { echo "::error::x86_64-uefi is not a PE32+ EFI application"; exit 1; }
+
+  # THE MACHINE WITH NO OPERATING SYSTEM ABOVE RISC-V SBI (0.32.0): `riscv64-none-musl', a C program
+  # and a C++ program that throws and catches, built over openkal-opensbi and run by QEMU's `virt'
+  # with OpenSBI; each status leaves the machine through its test finisher. A row a platform defines
+  # with no system is read by mcpp from the release after 2026.11.22.1 (mcpp-community/mcpp#1006),
+  # which MCPP_SOURCE_REF names until it is released.
+  sbi:
+    needs: resolves
+    name: riscv64-none-musl (built on Linux x86_64, run under QEMU virt with OpenSBI)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mcpp-community/setup-mcpp@v1
+        with:
+          version: ${{ env.MCPP_VERSION }}
+          xlings-version: ${{ env.XLINGS_VERSION }}
+
+      - name: The mcpp under cross-validation
+        run: |
+          [ -n "${MCPP_SOURCE_REF:-}" ] || exit 0
+          src="$RUNNER_TEMP/mcpp-src"
+          git clone --quiet --depth 1 --branch "$MCPP_SOURCE_REF" https://github.com/mcpp-community/mcpp.git "$src"
+          rm -f "$src/.xlings.json"
+          ( cd "$src" && mcpp build --release )
+          built=$(find "$src/target" -type f -name mcpp -path '*/bin/*' | head -1)
+          [ -n "$built" ] || { echo "::error::mcpp did not build from $MCPP_SOURCE_REF"; exit 1; }
+          echo "$(cd "$(dirname "$built")" && pwd)" >> "$GITHUB_PATH"
+          echo "under review: $("$built" --version)  (from $MCPP_SOURCE_REF)"
+
+      - name: A C program and a C++ program that throws, on the machine
+        working-directory: checks/sbi
+        run: |
+          mcpp --version
+          for p in sbi-c:7 sbi-cxx:9; do
+            bin=${p%%:*}; want=${p##*:}
+            set +e
+            timeout 600 mcpp run "$bin" --target riscv64-none-musl | tee "$bin.log"
+            status=${PIPESTATUS[0]}
+            set -e
+            [ "$status" -eq "$want" ] || { echo "::error::$bin ended with $status, not $want"; exit 1; }
+          done
+          grep -q 'sbi c: a mebibyte allocated, the clock advances' sbi-c.log || { echo "::error::the C program's output"; exit 1; }
+          grep -q 'sbi cxx: \["alpha", "mu", "zeta"\]' sbi-cxx.log && grep -q 'caught: across frames, 3 unwound' sbi-cxx.log \
+            || { echo "::error::the C++ program's output, or its exception"; exit 1; }
+          p=$(find target/riscv64-none-musl -path '*bin/sbi-cxx' -type f | head -1)
+          file "$p"
+          file "$p" | grep -q 'ELF 64-bit LSB executable, UCB RISC-V' || { echo "::error::not a RISC-V executable"; exit 1; }
 
   # I686-OPENKAL (0.28.0): the ok image of i386 (ELF32, REL), built from
   # checks/i386 in both modes, checked by okld, and run by okrun built for
@@ -388,6 +442,18 @@ jobs:
               || { echo "::error::the image's output ($mode)"; exit 1; }
             [ "$status" -eq 7 ] || { echo "::error::the image returned $status, not 7 ($mode)"; exit 1; }
           done
+
+      # The row's runner is the carrier, packed by mcpp (0.31.3, openkal-image#46): an
+      # image that starts itself is entered through the carrier as its loader.
+      - name: An image starts itself through the row's runner
+        working-directory: checks/starts
+        run: |
+          set +e
+          mcpp run --target i686-openkal | tee run.log
+          status=${PIPESTATUS[0]}
+          set -e
+          [ "$status" -eq 0 ] && grep -qx 'starts: child 3' run.log \
+            || { echo "::error::an i386 image's start of itself through the carrier (status $status)"; exit 1; }
 
   # System V Release 4 on i386 (0.30.0): a program of i686-svr4-musl (openkal-musl
   # over openkal-svr4) built in both modes and run by the provider's runner,
@@ -494,6 +560,7 @@ jobs:
             grep -q 'dos ok: \["one", "two"\]' run.log && grep -q 'caught: across a frame' run.log \
               && grep -q 'deep: 2080' run.log \
               && grep -q 'files: true' run.log \
+              && grep -q 'starts: child 3' run.log \
               || { echo "::error::the DOS program's output ($mode)"; exit 1; }
             [ "$status" -eq 7 ] || { echo "::error::the DOS program returned $status, not 7 ($mode)"; exit 1; }
           done

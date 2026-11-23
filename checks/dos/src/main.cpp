@@ -3,6 +3,11 @@
 // (0.29.1, `-z stack-size'), which openkal-dos 0.1.1's stub reads from PT_GNU_STACK.
 import std;
 
+#include <spawn.h>
+#include <sys/wait.h>
+
+extern "C" char** environ;
+
 int deep(int n) {
     volatile char frame[8192];
     frame[0] = static_cast<char>(n);
@@ -33,7 +38,20 @@ bool files() {
     return names == std::vector<std::string>{"g1.txt"};
 }
 
+// A START OF A PROGRAM (0.32.0): the program starts itself by posix_spawn with `child', which ends
+// with 3, and waitpid reads the status; the row's implementation provides openkal.process, a
+// started program run to its end before the start returns (openkal clause 7.19).
+int starts(const char* self) {
+    pid_t pid;
+    char* args[] = {const_cast<char*>(self), const_cast<char*>("child"), nullptr};
+    if (posix_spawn(&pid, self, nullptr, nullptr, args, environ) != 0) return -1;
+    int status = 0;
+    if (waitpid(pid, &status, 0) != pid) return -2;
+    return WIFEXITED(status) ? WEXITSTATUS(status) : -3;
+}
+
 int main(int argc, char** argv) {
+    if (argc >= 2 && std::string_view(argv[1]) == "child") return 3;
     std::vector<std::string> v(argv + 1, argv + argc);
     std::ranges::sort(v);
     std::println("dos ok: {}", v);
@@ -42,5 +60,6 @@ int main(int argc, char** argv) {
     std::println("PATH set: {}", std::getenv("PATH") != nullptr);
     std::println("deep: {}", deep(64));
     std::println("files: {}", files());
+    std::println("starts: child {}", starts(argv[0]));
     return 7;
 }

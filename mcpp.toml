@@ -12,7 +12,7 @@
 [package]
 namespace   = "mcpplibs"
 name        = "openkal-platform"
-version     = "0.31.2"
+version     = "0.32.0"
 description = "The platform of ok images (<arch>-openkal): their toolchain, C library and C++ run-time, tools, compile and link conventions, seal, runner and carrier, as one versioned statement mcpp reads."
 license     = "Apache-2.0"
 authors     = ["mcpplibs"]
@@ -59,7 +59,7 @@ toolchain = "llvm@23.1.3"
 runner    = { cmd = ["okrun", "{}"], host = "same-arch", hosts = ["linux-x86_64", "linux-aarch64", "linux-i686", "macos-aarch64", "macos-x86_64", "windows-x86_64", "freebsd-x86_64", "freebsd-aarch64", "uefi-x86_64", "dos-i686"], built-as = { "freebsd-x86_64" = "x86_64-freebsd-musl", "freebsd-aarch64" = "aarch64-freebsd-musl", "linux-i686" = "i686-linux-musl" } }
 # `mcpp pack --mode self-contained`: a program of the packing machine that
 # carries the image in a section and runs it through libokrun (M3).
-carrier   = { package = "openkal-run@0.7.2", section = ".oke", main = "carrier/main.cpp" }
+carrier   = { package = "openkal-run@0.7.3", section = ".oke", main = "carrier/main.cpp" }
 # The `okb` package format (`mcpp pack --pkg-format okb`): the images of every
 # architecture as one file okrun runs (openkal-image docs/okb.md).
 plugin    = "build.mcpp"
@@ -73,18 +73,18 @@ debuggee = ["okrun", "--debugger", "{}"]
 [platform.layers]
 compiler-runtime = "openkal-llvm-runtime@0.21.0"
 "c++-abi"        = "openkal-llvm-runtime@0.21.0"
-c-abi            = { name = "openkal-musl", version = "0.30.0", default-features = false, features = ["posix", "malloc-mimalloc"] }
+c-abi            = { name = "openkal-musl", version = "0.30.1", default-features = false, features = ["posix", "malloc-mimalloc"] }
 
 # Built for the building machine: `okld` writes and checks the notes, `okrun`
 # runs an image, `okprof` reads what a measured run recorded (0.23.0: the
 # order of a start's first executions, which a producer lays its code out by
 # and writes as the touch note).
 [platform.tools]
-okld   = "openkal-tools@0.7.2"
-okrun  = "openkal-tools@0.7.2"
-okprof = "openkal-tools@0.7.2"
+okld   = "openkal-tools@0.7.3"
+okrun  = "openkal-tools@0.7.3"
+okprof = "openkal-tools@0.7.3"
 # The seal of the DOS row (0.28.0): the stub of openkal-dos before an executable.
-okdos  = "openkal-dos-tools@0.2.0"
+okdos  = "openkal-dos-tools@0.3.0"
 
 # Every unit of an image (SPEC 12.2):
 #   -fPIC              the image is ET_DYN and has no text relocation;
@@ -222,7 +222,7 @@ toolchain = "llvm@23.1.3"
 [platform.hosted.layers]
 compiler-runtime = "openkal-llvm-runtime@0.21.0"
 "c++-abi"        = "openkal-llvm-runtime@0.21.0"
-c-abi            = { name = "openkal-musl", version = "0.30.0", default-features = false, features = ["posix", "malloc-mimalloc"] }
+c-abi            = { name = "openkal-musl", version = "0.30.1", default-features = false, features = ["posix", "malloc-mimalloc"] }
 
 # THE HOSTED ROWS' RUNNERS ON ANOTHER SYSTEM (0.29.0; mcpp 2026.11.16.1 reads a
 # runner's `enabled`). A FreeBSD program runs in the FreeBSD virtual machine of
@@ -240,7 +240,7 @@ serves    = ["x86_64-freebsd-musl"]
 hosted    = true
 base      = "none"
 toolchain = "llvm@23.1.3"
-layers    = { compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.0", default-features = false, features = ["posix", "malloc-mimalloc"] } }
+layers    = { compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.1", default-features = false, features = ["posix", "malloc-mimalloc"] } }
 runner    = { cmd = ["dirun", "--profile", "{pkg:freebsd-disk-image}/dirun.toml", "--emulator", "{pkg:qemu-x86}/bin/qemu-system-x86_64", "--", "{}"], host = "any", hosts = ["linux-x86_64"], requires = ["xim:dirun@0.6.0", "xim:freebsd-disk-image@14.5-1", "xim:qemu-x86@9.2.4-1"], enabled = false }
 
 [[platform.provider]]
@@ -249,7 +249,7 @@ serves    = ["aarch64-freebsd-musl"]
 hosted    = true
 base      = "none"
 toolchain = "llvm@23.1.3"
-layers    = { compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.0", default-features = false, features = ["posix", "malloc-mimalloc"] } }
+layers    = { compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.1", default-features = false, features = ["posix", "malloc-mimalloc"] } }
 runner    = { cmd = ["dirun", "--profile", "{pkg:aarch64-freebsd-disk-image}/dirun.toml", "--var", "firmware={pkg:ovmf}/share/edk2/edk2-aarch64-code.fd", "--emulator", "{pkg:qemu-system}/bin/qemu-system-aarch64", "--", "{}"], host = "any", hosts = ["linux-x86_64"], requires = ["xim:dirun@0.6.0", "xim:aarch64-freebsd-disk-image@14.5-1", "xim:ovmf@9.2.4-4", "xim:qemu-system@9.2.4"], enabled = false }
 
 [[platform.provider]]
@@ -258,7 +258,7 @@ serves    = ["x86_64-windows-musl"]
 hosted    = true
 base      = "none"
 toolchain = "llvm@23.1.3"
-layers    = { compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.0", default-features = false, features = ["posix", "malloc-mimalloc"] } }
+layers    = { compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.1", default-features = false, features = ["posix", "malloc-mimalloc"] } }
 runner    = { cmd = ["wine", "{}"], host = "same-arch", hosts = ["linux-x86_64"], requires = ["xim:wine@11.0"], enabled = false }
 
 # The runners require dirun 0.5.0 and ovmf 9.2.4-3 (0.29.0): ovmf's profile states the UEFI
@@ -293,7 +293,7 @@ serves = ["x86_64-uefi"]
 base   = "none"
 hosted = true
 
-layers = { compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.0", default-features = false, features = ["posix", "malloc-mimalloc"] } }
+layers = { compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.1", default-features = false, features = ["posix", "malloc-mimalloc"] } }
 link   = { driver = "lld", start = "efi_main", flags = ["--subsystem", "efi_application", "--gc-sections"], exe = "{name}.efi", inputs = [{ file = "board/qemu-exit.S" }], seal = [] }
 runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:ovmf}/dirun.toml", "--emulator", "{pkg:qemu-x86}/bin/qemu-system-x86_64", "--memory", "2048", "--"], hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64"], requires = ["xim:dirun@0.6.0", "xim:qemu-x86@9.2.4-1", "xim:ovmf@9.2.4-4"], enabled = false }
 
@@ -332,9 +332,46 @@ serves = ["i686-dos-musl"]
 base   = "none"
 hosted = true
 
-layers = { compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.0", default-features = false, features = ["posix", "malloc-mallocng"] } }
+layers = { compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.1", default-features = false, features = ["posix", "malloc-mallocng"] } }
 link   = { driver = "lld", start = "okdos_entry", flags = ["-static", "--image-base=0x1000", "-z", "norelro", "-z", "stack-size=1048576", "--gc-sections", "--eh-frame-hdr"], seal = [["okdos", "seal", "{}"]] }
 runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:dosbox-staging}/dirun.toml", "--"], hosts = ["linux-x86_64", "macos-aarch64", "windows-x86_64"], requires = ["xim:dirun@0.6.0", "xim:dosbox-staging@0.83.0-2"], enabled = false }
+
+# A MACHINE WITH NO OPERATING SYSTEM, ABOVE RISC-V SBI FIRMWARE (0.32.0): programs OpenSBI starts
+# on a RISC-V machine (QEMU's `virt' with `-bios default', or a board whose firmware is OpenSBI), on
+# the same C library and C++ run-time over openkal-opensbi. The row is the no-system row of the
+# family: `cfg(os = "none")' selects what openkal-musl and openkal-llvm-runtime state for a machine
+# with no operating system --- no files, programs or contexts, the unwinder that reads its tables
+# through the symbols the linker script defines (the program headers lie below the address the
+# firmware enters, so they are not loaded), the C++ run-time's freestanding configuration --- and
+# openkal-opensbi supplies the entry, the memory map (`board.ld': the image at 0x80200000, a stack
+# and a heap past it) and the console. The machine description is the built-in `riscv64-none-elf'
+# row's: RV64GC, the LP64D convention, the medium-any code model. The program's status leaves the
+# machine through the test finisher its device tree describes (openkal-opensbi 0.10.1); a program
+# receives no arguments, SBI having none to give. The runner is QEMU's `virt' machine with the
+# OpenSBI it bundles (xim's `qemu-riscv'). The row links through the compiler, as the built-in
+# no-system rows do: the freestanding link words (no start files, no default libraries, a static
+# image) are the engine's, and what the layer suppliers state for the link (`-Wl,--eh-frame-hdr',
+# the board's `-T board.ld') is in the compiler driver's words, which `ld.lld' refuses.
+[[platform.define]]
+triple        = "riscv64-none-musl"
+clang-triple  = "riscv64-unknown-none-elf"
+object-format = "elf"
+data-model    = "lp64"
+execution     = "none"
+tier          = "preview"
+march         = "rv64gc"
+mabi          = "lp64d"
+code-model    = "medany"
+flags         = ["-fasynchronous-unwind-tables", "-ffunction-sections", "-fdata-sections"]
+
+[[platform.provider]]
+name   = "sbi"
+serves = ["riscv64-none-musl"]
+base   = "none"
+hosted = true
+
+layers = { "kernel-abi" = { name = "openkal-opensbi", version = "0.10.1", features = ["standalone"] }, compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.1", default-features = false, features = ["posix", "malloc-mallocng"] } }
+runner = { cmd = ["{pkg:qemu-riscv}/bin/qemu-system-riscv64", "-machine", "virt", "-nographic", "-no-reboot", "-bios", "default", "-kernel", "{}"], hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64"], requires = ["xim:qemu-riscv@9.2.4-1"], enabled = false }
 
 # UNIX SYSTEM V RELEASE 4 AND ITS DESCENDANTS ON i386 (0.30.0): programs of the
 # kernel's own system-call interface, on the same C library and C++ run-time over
@@ -390,7 +427,7 @@ serves = ["i686-svr4-musl"]
 base   = "none"
 hosted = true
 
-layers = { "kernel-abi" = { name = "openkal-svr4", version = "0.3.0", features = ["standalone"] }, compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.0", default-features = false, features = ["posix", "malloc-mallocng"] } }
+layers = { "kernel-abi" = { name = "openkal-svr4", version = "0.3.0", features = ["standalone"] }, compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.1", default-features = false, features = ["posix", "malloc-mallocng"] } }
 link   = { driver = "lld", script = "link/svr4.ld", flags = ["-static", "-z", "norelro", "--gc-sections", "--eh-frame-hdr"] }
 runner = { cmd = ["unshare", "-Ur", "{pkg:ibcs-us}/bin/ibcs-us", "{}"], hosts = ["linux-x86_64"], requires = ["xim:ibcs-us@4.3-2"], enabled = false }
 
@@ -477,7 +514,14 @@ runner = { cmd = ["unshare", "-Ur", "{pkg:ibcs-us}/bin/ibcs-us", "{}"], hosts = 
 # than the first ends the program as the request); 0.31.2, openkal-image 0.7.2
 # (a copy of the program, which a library's fork makes, ends as it ends itself,
 # where under 0.7.1 its kal_exit waited for the runner's task, which the copy
-# does not have: openkal-image#44). From 0.24.1 the members name
+# does not have: openkal-image#44); 0.31.3, openkal-image 0.7.3 (the carrier,
+# as a package's runner, is okrun's command line and names itself the loader of
+# an image's start of an image file: openkal-image#46); 0.32.0, a program of the
+# firmware and of DOS starts programs (openkal-uefi 0.13.0 through LoadImage and
+# StartImage, openkal-dos and openkal-dos-tools 0.3.0 through EXEC, each a
+# started program run to its end first, openkal clause 7.19), openkal-musl 0.30.1
+# naming them, and openkal-windows 0.23.1 (a program without memory for its
+# arguments ends with the reason). From 0.24.1 the members name
 # one another by compatible ranges (`^0.28.0`) and this group chooses the
 # versions: mcpp 2026.11.7.1 resolves within it, and a fix of one member is that
 # member's release and a patch of this group, released together through one
@@ -486,17 +530,18 @@ runner = { cmd = ["unshare", "-Ur", "{pkg:ibcs-us}/bin/ibcs-us", "{}"], hosts = 
 openkal              = "0.26.0"
 openkal-linux        = "0.27.0"
 openkal-macos        = "0.24.1"
-openkal-windows      = "0.23.0"
+openkal-windows      = "0.23.1"
 openkal-freebsd      = "0.2.0"
-openkal-uefi         = "0.12.0"
-openkal-dos          = "0.2.0"
-openkal-dos-tools    = "0.2.0"
+openkal-uefi         = "0.13.0"
+openkal-dos          = "0.3.0"
+openkal-dos-tools    = "0.3.0"
 openkal-svr4         = "0.3.0"
-openkal-musl         = "0.30.0"
+openkal-opensbi      = "0.10.1"
+openkal-musl         = "0.30.1"
 openkal-llvm-runtime = "0.21.0"
-openkal-ld           = "0.7.2"
-openkal-run          = "0.7.2"
-openkal-tools        = "0.7.2"
+openkal-ld           = "0.7.3"
+openkal-run          = "0.7.3"
+openkal-tools        = "0.7.3"
 
 # The plugin's tool, `okld bundle`, which writes the okb, and its library, the
 # provider of a package format (mcpp.plugins.platform). mcpp.plugins 0.26.1
@@ -504,7 +549,7 @@ openkal-tools        = "0.7.2"
 # mcpplibs.os 0.4.4, whose openkal ends at 0.25, and the version group's 0.26.0
 # could not share a build with it.
 [build-dependencies]
-openkal-tools = { version = "0.7.2", tools = ["okld"] }
+openkal-tools = { version = "0.7.3", tools = ["okld"] }
 
 [build-dependencies.mcpp]
 plugins = { version = "0.26.1", features = ["plugins-platform"], host-module = true }

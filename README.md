@@ -165,6 +165,29 @@ builds openkal-run's core runner as a program of the DOS row below, with the
 image in its `.oke` section. Measured under DOSBox Staging: the image sorted its
 arguments, caught its exception, read DOS's `PATH` and returned 7.
 
+Platform 0.32.0 is a minor release of the group. A program of the firmware and
+of DOS starts programs: openkal-uefi 0.13.0 provides `openkal.process` through
+`LoadImage` and `StartImage`, and openkal-dos and openkal-dos-tools 0.3.0
+through EXEC, each a started program run to its end before the start returns
+(openkal clause 7.19), so `x86_64-uefi` and `i686-dos-musl` state the interface
+and a program's `posix_spawn` and `waitpid` start and wait for a program there.
+openkal-musl 0.30.1 names them. openkal-windows 0.23.1: a program without
+memory for its arguments and variables ends with that reason. `checks/uefi` and
+`checks/dos` start themselves through the rows' runners in CI and read the
+status 3. A row is added for a machine with no operating system above RISC-V SBI
+firmware, `riscv64-none-musl` (below), with openkal-opensbi 0.10.1 joining the
+group. It holds 0.31.3's member, openkal-image 0.7.3.
+
+Platform 0.31.3 is a patch of the group with one member. openkal-image 0.7.3:
+okrun's command line is a function of the runner (`okrun_main`), and the
+carrier, as a package's runner, is that function, so it names itself the
+loader through which an image's start of an image file goes. Under 0.31.2 the
+carrier named no loader: on `i686-openkal`, whose runner is the carrier, an
+image that started an image was refused (`ENOEXEC` from `posix_spawn`, status
+127 in a copy that called exec; openkal-image#46). `checks/starts` starts
+itself on that row in CI. The carrier and the tools are 0.7.3. No other member
+changes.
+
 Platform 0.31.2 is a patch of the group with one member. openkal-image 0.7.2: a
 copy of the program ends as the copy ends itself. A library composes `fork` by
 starting a context in a copy of the address space (openkal.space); the copy
@@ -230,7 +253,7 @@ until a project or this machine does:
 
 ```toml
 [target.x86_64-freebsd-musl]
-platform = "openkal-platform@0.31.2"
+platform = "openkal-platform@0.32.0"
 runner   = { enabled = true }
 ```
 
@@ -333,6 +356,39 @@ own openkal implementation (`checks/hosted`). `[host] platform` selects it for
 the host graph: build programs are then compiled as ok images of the machine's
 architecture and run by okrun (`checks/host-graph`).
 
+## A machine with no operating system, above RISC-V SBI (0.32.0)
+
+`riscv64-none-musl` is a row this platform defines and serves: a program that
+OpenSBI starts on a RISC-V machine, on the same C library and C++ run-time over
+openkal-opensbi, so it is written in C or in C++23 with `import std`.
+
+```toml
+[target.riscv64-none-musl]
+platform = "openkal-platform@0.32.0"
+runner   = { enabled = true }
+```
+
+```sh
+mcpp run --target riscv64-none-musl      # QEMU's virt with the OpenSBI it bundles; the status comes back
+```
+
+The row is the family's row with no system (`cfg(os = "none")`): what
+openkal-musl and openkal-llvm-runtime state for a machine with no operating
+system applies, among it the unwinder that finds its tables through the symbols
+the linker script defines, since the program headers lie below the address the
+firmware enters and are not loaded. openkal-opensbi supplies the entry, the
+memory map (`board.ld`: the image at 0x80200000, a stack and a heap past it) and
+the console. The machine description is the built-in `riscv64-none-elf` row's:
+RV64GC, LP64D, the medium-any code model. A program's status leaves the machine
+through the test finisher its device tree describes (openkal-opensbi 0.10.1);
+SBI gives a program no arguments, and it receives none. The runner (xim's
+`qemu-riscv`) boots a machine and is enabled by the project. An engine reads a
+row a platform defines with no system from the release after mcpp 2026.11.22.1.
+
+`checks/sbi` runs in CI: a C program allocates, reads the clock and ends with 7;
+a C++ program sorts, throws across three frames with a destructor in each and
+catches, and ends with 9.
+
 ## UEFI applications (0.28.0)
 
 `x86_64-uefi` is a row this platform defines and serves (`[[platform.define]]`,
@@ -342,7 +398,7 @@ with `import std`:
 
 ```toml
 [target.x86_64-uefi]
-platform = "openkal-platform@0.31.2"
+platform = "openkal-platform@0.32.0"
 runner   = { enabled = true }
 ```
 
@@ -378,7 +434,7 @@ and C++ run-time over openkal-svr4, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-svr4-musl]
-platform = "openkal-platform@0.31.2"
+platform = "openkal-platform@0.32.0"
 runner   = { enabled = true }
 ```
 
@@ -432,7 +488,7 @@ run-time over openkal-dos, so it is written in C++23 with `import std`:
 
 ```toml
 [target.i686-dos-musl]
-platform = "openkal-platform@0.31.2"
+platform = "openkal-platform@0.32.0"
 ```
 
 The row is TECHNICAL EXPERIMENT ONLY (openkal-dos's README). A program is the

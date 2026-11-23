@@ -1,0 +1,19 @@
+# The machine with no operating system above RISC-V SBI (0.32.0): a C program and a C++ program
+# that throws and catches, on the family's C library and C++ run-time over openkal-opensbi, run by
+# QEMU's `virt' with OpenSBI. The platform is the directory above.
+[package]
+name    = "sbi"
+version = "0.1.0"
+
+[targets.sbi-c]
+kind = "bin"
+main = "src/c.c"
+
+[targets.sbi-cxx]
+kind = "bin"
+main = "src/cxx.cpp"
+
+[target.riscv64-none-musl]
+platform = { path = "../.." }
+# The runner boots a machine and is enabled by the project (0.29.0).
+runner   = { enabled = true }

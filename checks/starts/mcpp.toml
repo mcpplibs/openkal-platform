@@ -1,0 +1,13 @@
+# An image that starts itself (0.31.3, openkal-image#46): built for i686-openkal and run by the
+# row's runner, the carrier as its package's runner, which names itself the loader of an
+# image's start of an image file. The platform is the directory above.
+[package]
+name    = "starts"
+version = "0.1.0"
+
+[targets.starts]
+kind = "bin"
+main = "src/main.c"
+
+[target.i686-openkal]
+platform = { path = "../.." }
