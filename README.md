@@ -180,9 +180,11 @@ group. It holds 0.31.3's member, openkal-image 0.7.3.
 
 Platform 0.32.1 is a patch of the group with openkal-linux 0.27.1, which adds
 riscv64 and reads a frame chain where `process_vm_readv` is absent. It adds the
-row `riscv64-linux-musl` to the hosted arrangement: openkal-musl 0.30.1 over
+row `riscv64-linux-musl` to the hosted arrangement: openkal-musl 0.30.2 over
 openkal-linux's riscv64 system-call layer, with openkal-llvm-runtime 0.21.0 above
-it. A provider entry states the row's runner, qemu's user-mode translator
+it. openkal-musl 0.30.2 defines `__riscv_flush_icache`, the call the compiler makes
+for `__builtin___clear_cache` on riscv64 Linux; the conformance suite, which
+performs that maintenance itself, did not link without it. A provider entry states the row's runner, qemu's user-mode translator
 (`xim:qemu-user-riscv64`) on Linux x86_64, which runs without being enabled. CI
 builds and runs a hosted program there and the specification's conformance suite
 through the platform.
