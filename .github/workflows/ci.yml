@@ -16,6 +16,8 @@ name: CI
 #   host-graph  a build program is compiled as an ok image and run by okrun
 #   i686        Linux's thirty-two bit row: the hosted program and the
 #               specification's conformance suite, run on Linux x86_64
+#   riscv64     Linux's riscv64 row: the hosted program and the specification's
+#               conformance suite, built on Linux x86_64 and run under qemu-user
 #   i686-openkal  the ok image of i386, run by okrun built for i686-linux-musl
 #   dos         a DOS program, and the i386 image carried as one (technical
 #               experiment only), run under DOSBox Staging through dirun
@@ -304,6 +306,53 @@ jobs:
             --target i686-linux-musl --platform "path:$GITHUB_WORKSPACE" | tee conformance.log
           grep -qE '^observations: [0-9]+ held, 0 did not hold' conformance.log \
             || { echo "::error::an observation did not hold on i686-linux-musl"; exit 1; }
+
+  # Linux's riscv64 row (0.32.1): openkal-linux's riscv64 layer beneath the
+  # family, built here and run under qemu's user-mode translator --- the hosted
+  # program through the row's runner, and the specification's conformance suite,
+  # whose programs start one another, through the kernel's registration of the
+  # translator for riscv64 executables.
+  riscv64:
+    needs: resolves
+    name: riscv64-linux-musl (built on Linux x86_64, run under qemu-user)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mcpp-community/setup-mcpp@v1
+        with:
+          version: ${{ env.MCPP_VERSION }}
+          xlings-version: ${{ env.XLINGS_VERSION }}
+
+      - name: The hosted program, through the row's runner
+        working-directory: checks/hosted
+        run: |
+          mcpp run --target riscv64-linux-musl -- one two | tee run.log
+          grep -q "hosted ok: hosted" run.log || { echo "::error::the hosted program's output"; exit 1; }
+          grep -q "hosted args: 3 two" run.log || { echo "::error::the hosted program's arguments"; exit 1; }
+          p=$(find target/riscv64-linux-musl -path '*bin/hosted' -type f | head -1)
+          file "$p"
+          file "$p" | grep -q 'ELF 64-bit' && file "$p" | grep -q 'RISC-V' && file "$p" | grep -q 'statically linked' \
+            || { echo "::error::riscv64-linux-musl is not a static riscv64 program"; exit 1; }
+
+      - name: The specification's conformance suite
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y -qq qemu-user-static > /dev/null
+          [ -e /proc/sys/fs/binfmt_misc/qemu-riscv64 ] \
+            || { echo "::error::the translator is not registered for riscv64 executables"; exit 1; }
+          spec=$(sed -n 's/^openkal *= *"\(.*\)"/\1/p' mcpp.toml | head -1)
+          impl=$(sed -n 's/^openkal-linux *= *"\(.*\)"/\1/p' mcpp.toml | head -1)
+          git clone --quiet --depth 1 --branch "$spec" https://github.com/mcpplibs/openkal.git .spec
+          git clone --quiet --depth 1 --branch "$impl" https://github.com/mcpplibs/openkal-linux.git .impl
+          bash .spec/tools/run-conformance.sh openkal-linux .impl full,optional \
+            --target riscv64-linux-musl --platform "path:$GITHUB_WORKSPACE" | tee conformance.log
+          grep -qE '^observations: [0-9]+ held, 0 did not hold' conformance.log \
+            || { echo "::error::an observation did not hold on riscv64-linux-musl"; exit 1; }
 
   uefi:
     needs: resolves
