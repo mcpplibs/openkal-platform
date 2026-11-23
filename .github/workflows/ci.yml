@@ -380,7 +380,7 @@ jobs:
           for p in sbi-c:7 sbi-cxx:9; do
             bin=${p%%:*}; want=${p##*:}
             set +e
-            timeout 600 mcpp run --target riscv64-none-musl --bin "$bin" | tee "$bin.log"
+            timeout 600 mcpp run "$bin" --target riscv64-none-musl | tee "$bin.log"
             status=${PIPESTATUS[0]}
             set -e
             [ "$status" -eq "$want" ] || { echo "::error::$bin ended with $status, not $want"; exit 1; }
