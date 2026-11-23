@@ -178,13 +178,17 @@ status 3. A row is added for a machine with no operating system above RISC-V SBI
 firmware, `riscv64-none-musl` (below), with openkal-opensbi 0.10.1 joining the
 group. It holds 0.31.3's member, openkal-image 0.7.3.
 
-Platform 0.32.1 is a patch of the group with openkal-linux 0.27.1, which adds
+Platform 0.32.1 is a patch of the group with openkal-linux 0.27.2, which adds
 riscv64 and reads a frame chain where `process_vm_readv` is absent. It adds the
-row `riscv64-linux-musl` to the hosted arrangement: openkal-musl 0.30.2 over
+row `riscv64-linux-musl` to the hosted arrangement: openkal-musl 0.30.3 over
 openkal-linux's riscv64 system-call layer, with openkal-llvm-runtime 0.21.0 above
-it. openkal-musl 0.30.2 defines `__riscv_flush_icache`, the call the compiler makes
-for `__builtin___clear_cache` on riscv64 Linux; the conformance suite, which
-performs that maintenance itself, did not link without it. A provider entry states the row's runner, qemu's user-mode translator
+it. What the conformance suite measured under the translator is in the two
+members. openkal-musl defines `__riscv_flush_icache`, the call the compiler makes
+for `__builtin___clear_cache` on riscv64 Linux, and `__tls_get_addr` from the
+thread pointer, the call riscv64's static link keeps for a general-dynamic access.
+openkal-linux gives the riscv64 record of a signal's action the 32 bytes the
+translator writes, and reads an ended program's record only where it was written.
+A provider entry states the row's runner, qemu's user-mode translator
 (`xim:qemu-user-riscv64`) on Linux x86_64, which runs without being enabled. CI
 builds and runs a hosted program there and the specification's conformance suite
 through the platform.
