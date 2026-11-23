@@ -348,7 +348,10 @@ runner = { cmd = ["dirun", "--payload", "{}", "--profile", "{pkg:dosbox-staging}
 # row's: RV64GC, the LP64D convention, the medium-any code model. The program's status leaves the
 # machine through the test finisher its device tree describes (openkal-opensbi 0.10.1); a program
 # receives no arguments, SBI having none to give. The runner is QEMU's `virt' machine with the
-# OpenSBI it bundles (xim's `qemu-riscv').
+# OpenSBI it bundles (xim's `qemu-riscv'). The row links through the compiler, as the built-in
+# no-system rows do: the freestanding link words (no start files, no default libraries, a static
+# image) are the engine's, and what the layer suppliers state for the link (`-Wl,--eh-frame-hdr',
+# the board's `-T board.ld') is in the compiler driver's words, which `ld.lld' refuses.
 [[platform.define]]
 triple        = "riscv64-none-musl"
 clang-triple  = "riscv64-unknown-none-elf"
@@ -368,7 +371,6 @@ base   = "none"
 hosted = true
 
 layers = { "kernel-abi" = { name = "openkal-opensbi", version = "0.10.1", features = ["standalone"] }, compiler-runtime = "openkal-llvm-runtime@0.21.0", "c++-abi" = "openkal-llvm-runtime@0.21.0", c-abi = { name = "openkal-musl", version = "0.30.1", default-features = false, features = ["posix", "malloc-mallocng"] } }
-link   = { driver = "lld", start = "_start", flags = ["-static", "-z", "norelro", "--gc-sections", "--eh-frame-hdr"] }
 runner = { cmd = ["{pkg:qemu-riscv}/bin/qemu-system-riscv64", "-machine", "virt", "-nographic", "-no-reboot", "-bios", "default", "-kernel", "{}"], hosts = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64"], requires = ["xim:qemu-riscv@9.2.4-1"], enabled = false }
 
 # UNIX SYSTEM V RELEASE 4 AND ITS DESCENDANTS ON i386 (0.30.0): programs of the
