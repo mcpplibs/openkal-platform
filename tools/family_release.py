@@ -12,7 +12,9 @@ mcpp-index it is given.
                      published index lists it already
   index DIR          adds the members the index lacks to the mcpp-index
                      checkout DIR: the whole group as one change, the content
-                     of its one index PR
+                     of its one index PR; an entry that lists its rows
+                     (`platform_rows`) has the list derived again by the
+                     checkout's tools/platform_rows.py
   visible DIR [--xim XDIR]
                      whether the copy of the index mcpp synced into DIR (the
                      path `mcpp index status` names) lists every member the
@@ -160,6 +162,12 @@ def index(members, checkout, review=False):
         if n == 0:
             sys.exit(f"{path}: no system table to add {version} to")
         path.write_text(text, encoding="utf-8")
+        # A platform's entry lists the rows its newest version serves; the list is
+        # derived data the index's lint compares with the manifest, and the index
+        # owns the derivation (tools/platform_rows.py), so a new version rewrites it.
+        if "platform_rows" in text:
+            subprocess.run([sys.executable, "-I", "tools/platform_rows.py", "write", str(path.relative_to(checkout))],
+                           cwd=checkout, check=True)
         added.append(f"{name} {version}")
     print("added: " + (", ".join(added) if added else "nothing, the index lists the group"))
     return 0
