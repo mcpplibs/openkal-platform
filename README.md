@@ -178,6 +178,15 @@ status 3. A row is added for a machine with no operating system above RISC-V SBI
 firmware, `riscv64-none-musl` (below), with openkal-opensbi 0.10.1 joining the
 group. It holds 0.31.3's member, openkal-image 0.7.3.
 
+Platform 0.32.1 is a patch of the group with openkal-linux 0.27.1, which adds
+riscv64 and reads a frame chain where `process_vm_readv` is absent. It adds the
+row `riscv64-linux-musl` to the hosted arrangement: openkal-musl 0.30.1 over
+openkal-linux's riscv64 system-call layer, with openkal-llvm-runtime 0.21.0 above
+it. A provider entry states the row's runner, qemu's user-mode translator
+(`xim:qemu-user-riscv64`) on Linux x86_64, which runs without being enabled. CI
+builds and runs a hosted program there and the specification's conformance suite
+through the platform.
+
 Platform 0.31.3 is a patch of the group with one member. openkal-image 0.7.3:
 okrun's command line is a function of the runner (`okrun_main`), and the
 carrier, as a package's runner, is that function, so it names itself the
@@ -550,7 +559,7 @@ previous patch's.
 |---|---|
 | `mcpp test` | the test image runs on the machine's architecture; the other architecture is built |
 | `checks/image` | a project without declarations builds, runs and packs (M2 and M3) |
-| `checks/hosted` | the hosted arrangement runs on Linux, macOS and Windows |
+| `checks/hosted` | the hosted arrangement runs on Linux, macOS and Windows; on Linux x86_64 also as `i686-linux-musl` and, under qemu-user, `riscv64-linux-musl`, each with the specification's conformance suite |
 | `checks/host-graph` | a build program runs as an ok image |
 | `checks/snapshot` | a C++ program starts from a snapshot of its initialisers, and a start whose named value differs does not |
 | `checks/i386` | an ok image of i386 is built in both modes, checked by okld and run by okrun built for i686-linux-musl; packed with `--systems dos-i686`, it runs as a DOS program |
